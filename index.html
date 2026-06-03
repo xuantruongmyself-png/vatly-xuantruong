@@ -1,0 +1,732 @@
+<!DOCTYPE html>
+<html lang="vi">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Vật Lý Xuân Trường | Học Vật Lý Online</title>
+
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+    <link href="https://fonts.googleapis.com/css2?family=Inter:ital,wght@0,400;0,500;0,600;0,700;0,800;0,900;1,900&family=DM+Mono:wght@400;500&display=swap" rel="stylesheet">
+
+    <style>
+        *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+        html { scroll-behavior: smooth; }
+
+        :root {
+            --blue: #0b84f3;
+            --blue2: #0066cc;
+            --black: #0f0f0f;
+            --gray: #555;
+            --gray2: #888;
+            --border: #e5e5e5;
+            --bg: #ffffff;
+            --bg2: #f9f9f9;
+        }
+
+        body {
+            background: var(--bg);
+            color: var(--black);
+            font-family: 'Inter', ui-sans-serif, system-ui, sans-serif;
+            -webkit-font-smoothing: antialiased;
+            overflow-x: hidden;
+        }
+
+        /* ─── NAV ─── */
+        .navbar {
+            position: fixed; top: 0; left: 0; right: 0; z-index: 200;
+            height: 56px;
+            display: flex; align-items: center; justify-content: space-between;
+            padding: 0 28px;
+            background: rgba(255,255,255,0.92);
+            backdrop-filter: blur(12px);
+            -webkit-backdrop-filter: blur(12px);
+            border-bottom: 1px solid var(--border);
+        }
+        .nav-left { display: flex; align-items: center; gap: 36px; }
+        .nav-logo {
+            display: flex; align-items: center; gap: 10px;
+            font-size: 15px; font-weight: 700; color: var(--black);
+            text-decoration: none;
+        }
+        /* Logo nguyên tử */
+        .logo-icon {
+            width: 28px; height: 28px;
+            flex-shrink: 0;
+        }
+        .nav-links { display: flex; gap: 28px; }
+        .nav-links a {
+            font-size: 14px; font-weight: 500; color: var(--black);
+            text-decoration: none; transition: color 0.15s;
+        }
+        .nav-links a:hover { color: var(--blue); }
+        .nav-right { display: flex; align-items: center; gap: 20px; }
+        .nav-right a {
+            font-size: 14px; color: var(--gray); text-decoration: none;
+            transition: color 0.15s;
+        }
+        .nav-right a:hover { color: var(--black); }
+        .nav-btn {
+            background: var(--black); color: #fff;
+            padding: 7px 16px; border-radius: 6px;
+            font-size: 13px; font-weight: 600; text-decoration: none;
+            transition: opacity 0.15s;
+        }
+        .nav-btn:hover { opacity: 0.8; color: #fff; }
+
+        /* ─── HERO ─── */
+        .hero {
+            padding-top: 120px;
+            padding-bottom: 60px;
+            text-align: center;
+            position: relative;
+            overflow: hidden;
+        }
+
+        /* Nguyên tử SVG hero */
+        .hero-atom {
+            position: absolute;
+            top: 40px; left: 50%;
+            transform: translateX(-50%);
+            width: 820px;
+            pointer-events: none;
+            z-index: 0;
+        }
+        .hero-atom .orbit { animation: spin linear infinite; transform-origin: 50% 50%; }
+        .hero-atom .orbit1 { animation-duration: 7s; }
+        .hero-atom .orbit2 { animation-duration: 11s; animation-direction: reverse; }
+        .hero-atom .orbit3 { animation-duration: 9s; }
+        @keyframes spin { from { transform: rotate(0deg); } to { transform: rotate(360deg); } }
+        .hero-atom .electron {
+            animation: counter-spin linear infinite;
+            transform-origin: 50% 50%;
+        }
+        .hero-atom .e1 { animation-duration: 7s; animation-direction: reverse; }
+        .hero-atom .e2 { animation-duration: 11s; }
+        .hero-atom .e3 { animation-duration: 9s; animation-direction: reverse; }
+        @keyframes counter-spin { from { transform: rotate(0deg); } to { transform: rotate(-360deg); } }
+
+        .hero-inner { position: relative; z-index: 1; }
+
+        .hero-h1 {
+            font-size: clamp(52px, 8vw, 86px);
+            font-weight: 900;
+            line-height: 1.04;
+            letter-spacing: -0.045em;
+            color: var(--black);
+            max-width: 820px;
+            margin: 0 auto 22px;
+        }
+        .hero-sub {
+            font-size: 18px;
+            color: var(--gray);
+            line-height: 1.65;
+            max-width: 480px;
+            margin: 0 auto 40px;
+            font-weight: 500;
+        }
+
+        /* Terminal block giống remotion */
+        .hero-terminal {
+            display: inline-flex; align-items: center; gap: 14px;
+            background: var(--black);
+            color: #f0f0f0;
+            padding: 13px 22px;
+            border-radius: 9px;
+            font-family: 'DM Mono', monospace;
+            font-size: 14px;
+            margin-bottom: 20px;
+            cursor: pointer;
+            transition: opacity 0.15s;
+            user-select: all;
+        }
+        .hero-terminal:hover { opacity: 0.85; }
+        .hero-terminal .dollar { color: var(--blue); font-weight: 500; }
+        .hero-terminal .copy-icon { color: #666; font-size: 12px; transition: color 0.15s; }
+        .hero-terminal:hover .copy-icon { color: #aaa; }
+
+        /* Nút hàng dưới terminal */
+        .hero-btns {
+            display: flex; gap: 10px; justify-content: center;
+            flex-wrap: wrap; margin-top: 12px;
+        }
+        .btn-outline {
+            display: inline-flex; align-items: center; gap: 8px;
+            border: 1.5px solid #d0d0d0;
+            color: var(--black); background: #fff;
+            padding: 9px 18px; border-radius: 7px;
+            font-size: 14px; font-weight: 600;
+            text-decoration: none; cursor: pointer;
+            transition: border-color 0.15s, background 0.15s;
+        }
+        .btn-outline:hover { border-color: #aaa; background: #f5f5f5; color: var(--black); }
+        .btn-outline.dark {
+            background: var(--black); color: #fff; border-color: var(--black);
+        }
+        .btn-outline.dark:hover { background: #222; border-color: #222; color: #fff; }
+        .btn-outline.blue {
+            background: var(--blue); color: #fff; border-color: var(--blue);
+        }
+        .btn-outline.blue:hover { background: var(--blue2); border-color: var(--blue2); color: #fff; }
+
+        /* Template icons row */
+        .template-row {
+            display: flex; align-items: center; gap: 28px;
+            justify-content: center; margin-top: 48px;
+            flex-wrap: wrap;
+        }
+        .template-item {
+            display: flex; flex-direction: column; align-items: center; gap: 8px;
+            font-size: 14px; font-weight: 600; color: var(--gray2); cursor: pointer;
+            transition: color 0.15s;
+        }
+        .template-item:hover { color: var(--black); }
+        .template-icon {
+            width: 40px; height: 48px;
+            border: 1.5px solid #d0d0d0; border-radius: 5px;
+            display: flex; align-items: center; justify-content: center;
+            font-size: 16px; background: #fafafa;
+            transition: border-color 0.15s;
+        }
+        .template-item:hover .template-icon { border-color: #888; }
+        .template-find {
+            display: inline-flex; align-items: center; gap: 6px;
+            border: 1.5px solid var(--black); background: var(--black); color: #fff;
+            padding: 9px 18px; border-radius: 100px;
+            font-size: 13px; font-weight: 600;
+            text-decoration: none; transition: opacity 0.15s;
+        }
+        .template-find:hover { opacity: 0.8; color: #fff; }
+
+        /* ─── DIVIDER ─── */
+        .divider { border: none; border-top: 1px solid var(--border); }
+
+        /* ─── FEATURE SECTIONS ─── */
+        .features { max-width: 1100px; margin: 0 auto; padding: 0 32px; }
+
+        .feature-row {
+            display: grid;
+            grid-template-columns: 1fr 1fr;
+            gap: 80px;
+            align-items: center;
+            padding: 80px 0;
+            border-bottom: 1px solid var(--border);
+        }
+        /* hàng đảo ảnh sang phải */
+        .feature-row.flip { direction: rtl; }
+        .feature-row.flip > * { direction: ltr; }
+
+        .feat-visual {
+            border-radius: 12px;
+            overflow: hidden;
+            background: var(--black);
+            min-height: 280px;
+            display: flex; flex-direction: column;
+            position: relative;
+        }
+        /* thanh cửa sổ giống remotion */
+        .feat-window-bar {
+            background: #1a1a1a;
+            padding: 10px 14px;
+            display: flex; align-items: center; gap: 6px;
+            border-bottom: 1px solid #2a2a2a;
+            flex-shrink: 0;
+        }
+        .feat-dot { width: 10px; height: 10px; border-radius: 50%; }
+        .feat-visual-body {
+            flex: 1; padding: 24px; display: flex; flex-direction: column; gap: 10px;
+        }
+        .feat-line {
+            display: flex; align-items: center; gap: 12px;
+            padding: 11px 14px; border-radius: 7px;
+            background: #1a1a1a; border: 1px solid #2a2a2a;
+            font-size: 14px; color: #ccc; font-weight: 500;
+        }
+        .feat-line-label { flex: 1; }
+        .feat-line-val { font-family: 'DM Mono', monospace; font-size: 13px; font-weight: 600; }
+        .feat-line-dot { width: 8px; height: 8px; border-radius: 50%; flex-shrink: 0; }
+
+        .feat-text { display: flex; flex-direction: column; gap: 16px; }
+        /* Kiểu heading "Từ bình thường" + "từ xanh" */
+        .feat-heading {
+            font-size: clamp(28px, 3.5vw, 42px);
+            font-weight: 800;
+            letter-spacing: -0.035em;
+            line-height: 1.15;
+            color: var(--black);
+        }
+        .feat-heading .blue { color: var(--blue); }
+        .feat-sub {
+            font-size: 16px; line-height: 1.75;
+            color: var(--gray); max-width: 420px; font-weight: 500;
+        }
+        .feat-links { display: flex; flex-direction: column; gap: 6px; margin-top: 4px; }
+        .feat-link {
+            display: inline-flex; align-items: center; gap: 6px;
+            color: var(--blue); font-size: 15px; font-weight: 700;
+            text-decoration: none; transition: gap 0.15s;
+        }
+        .feat-link:hover { gap: 10px; }
+
+        /* ─── SCORE DEMO (feature visual cho thi thử) ─── */
+        .score-demo {
+            background: #0f0f0f; border-radius: 12px;
+            padding: 28px; min-height: 280px;
+        }
+        .score-header {
+            font-family: 'DM Mono', monospace;
+            font-size: 12px; color: #555; letter-spacing: 2px; font-weight: 600;
+            text-transform: uppercase; margin-bottom: 20px;
+        }
+        .score-number {
+            font-size: 56px; font-weight: 900; letter-spacing: -0.04em;
+            color: #fff; margin-bottom: 6px;
+        }
+        .score-label { font-size: 14px; color: #666; margin-bottom: 20px; font-weight: 500; }
+        .progress-bar-wrap { height: 6px; background: #222; border-radius: 100px; margin-bottom: 28px; overflow: hidden; }
+        .progress-bar-fill { height: 100%; border-radius: 100px; background: #0b84f3; width: 90%; }
+        .score-item {
+            display: flex; align-items: center; gap: 10px;
+            padding: 11px 14px; border-radius: 6px;
+            background: #1a1a1a; margin-bottom: 8px;
+            font-size: 13px; color: #bbb; font-weight: 500;
+        }
+        .score-status { font-size: 11px; font-weight: 700; padding: 3px 10px; border-radius: 100px; margin-left: auto; flex-shrink: 0; }
+        .ok { background: rgba(34,197,94,0.15); color: #4ade80; }
+        .fail { background: rgba(239,68,68,0.15); color: #f87171; }
+
+        /* ─── SCHEDULE + LEADERBOARD ─── */
+        .stats-section {
+            background: var(--bg2);
+            border-top: 1px solid var(--border);
+            border-bottom: 1px solid var(--border);
+            padding: 80px 32px;
+        }
+        .stats-inner { max-width: 1100px; margin: 0 auto; }
+        .stats-heading {
+            text-align: center;
+            font-size: clamp(28px, 4vw, 46px);
+            font-weight: 900; letter-spacing: -0.04em;
+            margin-bottom: 10px; color: var(--black);
+        }
+        .stats-heading .blue { color: var(--blue); }
+        .stats-sub {
+            text-align: center; color: var(--gray);
+            font-size: 16px; margin-bottom: 56px; font-weight: 500;
+        }
+
+        /* Số liệu ngang */
+        .num-row {
+            display: grid; grid-template-columns: repeat(4, 1fr);
+            border: 1px solid var(--border); border-radius: 12px;
+            overflow: hidden; background: #fff;
+            margin-bottom: 48px;
+        }
+        .num-item {
+            padding: 28px 24px;
+            border-right: 1px solid var(--border);
+            display: flex; flex-direction: column; gap: 4px;
+        }
+        .num-item:last-child { border-right: none; }
+        .num-big {
+            font-size: 36px; font-weight: 900; letter-spacing: -0.04em;
+            color: var(--black);
+        }
+        .num-label { font-size: 14px; color: var(--gray2); font-weight: 500; }
+
+        /* Cards lịch + bảng vàng */
+        .panels-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 24px; }
+        .panel-card {
+            border: 1px solid var(--border); border-radius: 12px;
+            overflow: hidden; background: #fff;
+        }
+        .panel-card-head {
+            padding: 16px 22px;
+            border-bottom: 1px solid var(--border);
+            display: flex; align-items: center; gap: 10px;
+            font-size: 14px; font-weight: 700; color: var(--black);
+        }
+        .panel-card-head i { color: var(--blue); }
+        .panel-card-row {
+            padding: 15px 22px;
+            display: flex; justify-content: space-between; align-items: center;
+            border-bottom: 1px solid var(--border);
+            font-size: 14px; font-weight: 500;
+        }
+        .panel-card-row:last-child { border-bottom: none; }
+        .row-left { color: var(--gray); }
+        .row-badge {
+            background: #eff6ff; color: var(--blue);
+            border: 1px solid #bfdbfe;
+            padding: 4px 12px; border-radius: 100px;
+            font-size: 12px; font-weight: 700;
+        }
+        .row-score {
+            font-family: 'DM Mono', monospace;
+            font-weight: 700; color: #16a34a; font-size: 14px;
+        }
+        .row-rank {
+            font-family: 'DM Mono', monospace;
+            color: #aaa; font-size: 12px; font-weight: 600; margin-right: 6px;
+        }
+
+        /* ─── CTA ─── */
+        .cta-section {
+            text-align: center; padding: 100px 32px;
+            position: relative; overflow: hidden;
+        }
+        .cta-section::before {
+            content: '';
+            position: absolute; top: 0; left: 50%; transform: translateX(-50%);
+            width: 600px; height: 300px;
+            background: radial-gradient(ellipse at top, rgba(11,132,243,0.08), transparent 70%);
+            pointer-events: none;
+        }
+        .cta-h2 {
+            font-size: clamp(34px, 5vw, 60px);
+            font-weight: 900; letter-spacing: -0.04em;
+            margin-bottom: 16px; position: relative;
+        }
+        .cta-sub { font-size: 16px; color: var(--gray); margin-bottom: 36px; position: relative; }
+        .cta-btns { display: flex; gap: 12px; justify-content: center; flex-wrap: wrap; position: relative; }
+
+        /* ─── FOOTER ─── */
+        footer {
+            border-top: 1px solid var(--border);
+            padding: 32px;
+        }
+        .footer-inner {
+            max-width: 1100px; margin: 0 auto;
+            display: flex; justify-content: space-between; align-items: center;
+        }
+        .footer-logo {
+            display: flex; align-items: center; gap: 8px;
+            font-size: 14px; font-weight: 700; color: var(--black);
+        }
+        .footer-logo .logo-icon { width: 18px; height: 18px; }
+        .footer-copy { font-size: 13px; color: var(--gray2); font-weight: 500; }
+
+        /* ─── RESPONSIVE ─── */
+        @media (max-width: 900px) {
+            .nav-links { display: none; }
+            .feature-row { grid-template-columns: 1fr; gap: 36px; direction: ltr; }
+            .num-row { grid-template-columns: 1fr 1fr; }
+            .num-item { border-bottom: 1px solid var(--border); }
+            .panels-grid { grid-template-columns: 1fr; }
+            .footer-inner { flex-direction: column; gap: 12px; text-align: center; }
+        }
+        @media (max-width: 600px) {
+            .hero { padding-top: 90px; }
+            .hero-h1 { font-size: 40px; }
+            .hero-atom { width: 500px; }
+            .num-row { grid-template-columns: 1fr; }
+            .stats-section { padding: 60px 20px; }
+            .features { padding: 0 20px; }
+            .template-row { gap: 16px; }
+        }
+    </style>
+</head>
+<body>
+
+<!-- ─── NAV ─── -->
+<nav class="navbar">
+    <div class="nav-left">
+        <a href="#" class="nav-logo">
+            <!-- Logo nguyên tử -->
+            <svg class="logo-icon" viewBox="0 0 28 28" fill="none" xmlns="http://www.w3.org/2000/svg">
+                <!-- nhân -->
+                <circle cx="14" cy="14" r="2.8" fill="#0b84f3"/>
+                <!-- orbit 1 ngang -->
+                <ellipse cx="14" cy="14" rx="12" ry="5" stroke="#0b84f3" stroke-width="1.3" fill="none" opacity="0.7"/>
+                <!-- orbit 2 nghiêng 60° -->
+                <ellipse cx="14" cy="14" rx="12" ry="5" stroke="#0b84f3" stroke-width="1.3" fill="none" opacity="0.5"
+                    transform="rotate(60 14 14)"/>
+                <!-- orbit 3 nghiêng -60° -->
+                <ellipse cx="14" cy="14" rx="12" ry="5" stroke="#0b84f3" stroke-width="1.3" fill="none" opacity="0.5"
+                    transform="rotate(-60 14 14)"/>
+            </svg>
+            Vật Lý Xuân Trường
+        </a>
+        <div class="nav-links">
+            <a href="baihoc.html">Khóa Học</a>
+            <a href="#schedule">Lịch Live</a>
+            <a href="#leaderboard">Bảng Vàng</a>
+        </div>
+    </div>
+    <div class="nav-right">
+        <a href="danhsach-ly12.html">Đề thi</a>
+        <a href="danhsach-ly12.html" class="nav-btn">Thi Thử Ngay</a>
+    </div>
+</nav>
+
+<!-- ─── HERO ─── -->
+<div class="hero">
+    <!-- Nguyên tử SVG hero — 3 quỹ đạo ellipse có electron chạy -->
+    <svg class="hero-atom" viewBox="0 0 820 420" fill="none" xmlns="http://www.w3.org/2000/svg" aria-hidden="true">
+        <!-- Nhân trung tâm -->
+        <circle cx="410" cy="210" r="16" fill="#0b84f3" opacity="0.9"/>
+        <circle cx="410" cy="210" r="10" fill="#93c5fd"/>
+        <circle cx="410" cy="210" r="32" fill="#0b84f3" opacity="0.1"/>
+
+        <!-- Orbit 1 — nằm ngang -->
+        <ellipse cx="410" cy="210" rx="350" ry="85"
+            stroke="#0b84f3" stroke-width="1.8" fill="none" opacity="0.25"/>
+        <!-- Orbit 2 — nghiêng 60° -->
+        <ellipse cx="410" cy="210" rx="350" ry="85"
+            stroke="#3b82f6" stroke-width="1.8" fill="none" opacity="0.18"
+            transform="rotate(60 410 210)"/>
+        <!-- Orbit 3 — nghiêng -60° -->
+        <ellipse cx="410" cy="210" rx="350" ry="85"
+            stroke="#60a5fa" stroke-width="1.8" fill="none" opacity="0.15"
+            transform="rotate(-60 410 210)"/>
+
+        <!-- Electron 1 (orbit ngang) — dùng animateTransform -->
+        <circle r="7" fill="#0b84f3" opacity="0.95">
+            <animateTransform attributeName="transform" type="rotate"
+                from="0 410 210" to="360 410 210" dur="7s" repeatCount="indefinite"/>
+            <animate attributeName="cx" values="760;410;60;410;760" dur="7s" repeatCount="indefinite"/>
+            <animate attributeName="cy" values="210;295;210;125;210" dur="7s" repeatCount="indefinite"/>
+        </circle>
+
+        <!-- Electron 2 (orbit 60°) -->
+        <g transform="rotate(60 410 210)">
+            <circle r="6" fill="#60a5fa" opacity="0.9">
+                <animateTransform attributeName="transform" type="rotate"
+                    from="360 410 210" to="0 410 210" dur="11s" repeatCount="indefinite"/>
+                <animate attributeName="cx" values="760;410;60;410;760" dur="11s" repeatCount="indefinite"/>
+                <animate attributeName="cy" values="210;295;210;125;210" dur="11s" repeatCount="indefinite"/>
+            </circle>
+        </g>
+
+        <!-- Electron 3 (orbit -60°) -->
+        <g transform="rotate(-60 410 210)">
+            <circle r="5" fill="#93c5fd" opacity="0.85">
+                <animateTransform attributeName="transform" type="rotate"
+                    from="0 410 210" to="360 410 210" dur="9s" repeatCount="indefinite"/>
+                <animate attributeName="cx" values="760;410;60;410;760" dur="9s" repeatCount="indefinite"/>
+                <animate attributeName="cy" values="210;295;210;125;210" dur="9s" repeatCount="indefinite"/>
+            </circle>
+        </g>
+    </svg>
+
+    <div class="hero-inner">
+        <h1 class="hero-h1">Học Vật Lý<br>thật sự hiệu quả.</h1>
+        <p class="hero-sub">
+            Hệ thống bài giảng tư duy, luyện đề thực chiến<br>và thi thử trực tuyến chuẩn Bộ Giáo Dục.
+        </p>
+
+        <!-- Terminal block -->
+        <div class="hero-terminal" onclick="this.querySelector('.copy-icon').style.color='#0b84f3'; setTimeout(()=>this.querySelector('.copy-icon').style.color='',1200)">
+            <span class="dollar">$</span>
+            <span>vatly.xuantruong.vn</span>
+            <i class="fa-regular fa-copy copy-icon"></i>
+        </div>
+
+        <!-- Nút hàng ngang -->
+        <div class="hero-btns">
+            <a href="baihoc.html" class="btn-outline blue">
+                <i class="fa-solid fa-book-open" style="font-size:13px"></i> Khóa Học
+            </a>
+            <a href="danhsach-ly12.html" class="btn-outline dark">
+                <i class="fa-solid fa-circle-play" style="font-size:13px"></i> Thi Thử
+            </a>
+            <a href="#schedule" class="btn-outline">
+                <i class="fa-solid fa-video" style="font-size:13px"></i> Lịch Livestream
+            </a>
+            <a href="#leaderboard" class="btn-outline">
+                <i class="fa-solid fa-trophy" style="font-size:13px"></i> Bảng Vàng
+            </a>
+        </div>
+
+        <!-- Template row — 3 cấp học -->
+        <div class="template-row">
+            <div class="template-item" onclick="alert('Khóa Lý 10 đang hoàn thiện!')">
+                <div class="template-icon"><i class="fa-solid fa-atom" style="color:#0b84f3"></i></div>
+                <span>Vật Lý 10</span>
+            </div>
+            <div class="template-item" onclick="alert('Khóa Lý 11 đang hoàn thiện!')">
+                <div class="template-icon"><i class="fa-solid fa-bolt" style="color:#7c3aed"></i></div>
+                <span>Vật Lý 11</span>
+            </div>
+            <div class="template-item">
+                <div class="template-icon"><i class="fa-solid fa-satellite-dish" style="color:#16a34a"></i></div>
+                <span>Vật Lý 12</span>
+            </div>
+            <a href="danhsach-ly12.html" class="template-find">
+                Vào học ngay &nbsp;→
+            </a>
+        </div>
+    </div>
+</div>
+
+<hr class="divider">
+
+<!-- ─── FEATURE ROWS ─── -->
+<div class="features" id="courses">
+
+    <!-- Row 1: học bằng tư duy -->
+    <div class="feature-row">
+        <div class="feat-visual">
+            <div class="feat-window-bar">
+                <div class="feat-dot" style="background:#ff5f57"></div>
+                <div class="feat-dot" style="background:#febc2e"></div>
+                <div class="feat-dot" style="background:#28c840"></div>
+                <span style="font-family:'DM Mono',monospace;font-size:11px;color:#555;margin-left:10px">vatly.js</span>
+            </div>
+            <div class="feat-visual-body">
+                <div class="feat-line">
+                    <div class="feat-line-dot" style="background:#0b84f3"></div>
+                    <div class="feat-line-label">Định luật II Newton</div>
+                    <div class="feat-line-val" style="color:#60a5fa">F = ma</div>
+                </div>
+                <div class="feat-line">
+                    <div class="feat-line-dot" style="background:#a78bfa"></div>
+                    <div class="feat-line-label">Bảo toàn năng lượng</div>
+                    <div class="feat-line-val" style="color:#c4b5fd">ΔE = W_ngoai</div>
+                </div>
+                <div class="feat-line">
+                    <div class="feat-line-dot" style="background:#34d399"></div>
+                    <div class="feat-line-label">Dao động điều hòa</div>
+                    <div class="feat-line-val" style="color:#6ee7b7">x = A·cos(ωt+φ)</div>
+                </div>
+                <div class="feat-line">
+                    <div class="feat-line-dot" style="background:#fbbf24"></div>
+                    <div class="feat-line-label">Lực Lorentz</div>
+                    <div class="feat-line-val" style="color:#fde68a">F = qvB·sinα</div>
+                </div>
+                <div class="feat-line">
+                    <div class="feat-line-dot" style="background:#f87171"></div>
+                    <div class="feat-line-label">Điện trường đều</div>
+                    <div class="feat-line-val" style="color:#fca5a5">E = U/d</div>
+                </div>
+            </div>
+        </div>
+        <div class="feat-text">
+            <div class="feat-heading">Học <span class="blue">bằng tư duy.</span></div>
+            <p class="feat-sub">Mỗi bài giảng được thiết kế để học sinh thấy bản chất vật lý đằng sau công thức — giải được mọi biến thể mà không cần học vẹt.</p>
+            <div class="feat-links">
+                <a href="#courses" class="feat-link">Xem chương trình &nbsp;→</a>
+                <a href="danhsach-ly12.html" class="feat-link">Luyện đề ngay &nbsp;→</a>
+            </div>
+        </div>
+    </div>
+
+    <!-- Row 2: thi thử online (flip) -->
+    <div class="feature-row flip" id="quiz">
+        <div class="feat-text">
+            <div class="feat-heading">Thi thử <span class="blue">thực chiến.</span></div>
+            <p class="feat-sub">Hệ thống thi trực tuyến chuẩn cấu trúc Bộ Giáo Dục, chấm điểm tức thì, lưu lịch sử từng lần thi và chỉ ra câu sai.</p>
+            <div class="feat-links">
+                <a href="danhsach-ly12.html" class="feat-link">Vào thi thử miễn phí &nbsp;→</a>
+            </div>
+        </div>
+        <div class="score-demo">
+            <div class="score-header">// KẾT QUẢ THI THỬ</div>
+            <div class="score-number">9.0</div>
+            <div class="score-label">Điểm — 36/40 câu đúng</div>
+            <div class="progress-bar-wrap"><div class="progress-bar-fill"></div></div>
+            <div class="score-item">
+                <i class="fa-solid fa-atom" style="color:#60a5fa;font-size:12px"></i>
+                Câu 1 — Động lực học Newton
+                <span class="score-status ok">Đúng</span>
+            </div>
+            <div class="score-item">
+                <i class="fa-solid fa-wave-square" style="color:#6ee7b7;font-size:12px"></i>
+                Câu 2 — Dao động điều hòa
+                <span class="score-status ok">Đúng</span>
+            </div>
+            <div class="score-item">
+                <i class="fa-solid fa-satellite-dish" style="color:#f87171;font-size:12px"></i>
+                Câu 3 — Sóng điện từ
+                <span class="score-status fail">Sai</span>
+            </div>
+        </div>
+    </div>
+
+    <!-- Row 3: livestream -->
+    <div class="feature-row" id="schedule">
+        <div class="feat-visual">
+            <div class="feat-window-bar">
+                <div class="feat-dot" style="background:#ff5f57"></div>
+                <div class="feat-dot" style="background:#febc2e"></div>
+                <div class="feat-dot" style="background:#28c840"></div>
+                <span style="font-family:'DM Mono',monospace;font-size:11px;color:#555;margin-left:10px">live-schedule.json</span>
+            </div>
+            <div class="feat-visual-body">
+                <div class="feat-line">
+                    <div class="feat-line-dot" style="background:#0b84f3"></div>
+                    <div class="feat-line-label">Thứ Hai · 19:30</div>
+                    <div class="feat-line-val" style="color:#93c5fd">Chữa đề 12</div>
+                </div>
+                <div class="feat-line">
+                    <div class="feat-line-dot" style="background:#a78bfa"></div>
+                    <div class="feat-line-label">Thứ Tư · 19:30</div>
+                    <div class="feat-line-val" style="color:#c4b5fd">Bổ trợ Lý 11</div>
+                </div>
+                <div class="feat-line">
+                    <div class="feat-line-dot" style="background:#34d399"></div>
+                    <div class="feat-line-label">Thứ Sáu · 19:30</div>
+                    <div class="feat-line-val" style="color:#6ee7b7">Lấy gốc Lý 10</div>
+                </div>
+                <div class="feat-line">
+                    <div class="feat-line-dot" style="background:#fbbf24"></div>
+                    <div class="feat-line-label">Chủ Nhật · 19:30</div>
+                    <div class="feat-line-val" style="color:#fde68a">Tổng ôn & Thi thử</div>
+                </div>
+            </div>
+        </div>
+        <div class="feat-text">
+            <div class="feat-heading">Livestream <span class="blue">4 buổi/tuần.</span></div>
+            <p class="feat-sub">Buổi live bổ trợ trực tiếp mỗi tuần — chữa đề thực chiến, giải đáp thắc mắc và ôn luyện theo từng khối lớp.</p>
+            <div class="feat-links">
+                <a href="#schedule" class="feat-link">Xem lịch livestream &nbsp;→</a>
+            </div>
+        </div>
+    </div>
+
+</div><!-- /features -->
+
+<!-- ─── STATS + LEADERBOARD ─── -->
+<div class="stats-section" id="leaderboard">
+    <div class="stats-inner">
+        <h2 class="stats-heading">Cộng đồng <span class="blue">học vật lý.</span></h2>
+        <p class="stats-sub">Hàng trăm học sinh đang cùng nhau chinh phục điểm 9+ mỗi ngày.</p>
+
+        <div class="num-row">
+            <div class="num-item">
+                <div class="num-big">500+</div>
+                <div class="num-label">Học sinh đang học</div>
+            </div>
+            <div class="num-item">
+                <div class="num-big">1,200+</div>
+                <div class="num-label">Câu hỏi trong ngân hàng đề</div>
+            </div>
+            <div class="num-item">
+                <div class="num-big">4×</div>
+                <div class="num-label">Livestream bổ trợ mỗi tuần</div>
+            </div>
+            <div class="num-item">
+                <div class="num-big">9.2</div>
+                <div class="num-label">Điểm trung bình thi thử</div>
+            </div>
+        </div>
+
+        <div class="panels-grid">
+            <!-- Lịch Live -->
+            <div class="panel-card">
+                <div class="panel-card-head">
+                    <i class="fa-solid fa-video"></i> Lịch Livestream Bổ Trợ
+                </div>
+                <div class="panel-card-row">
+                    <span class="row-left">Thứ Hai · 19:30</span>
+                    <span class="row-badge">Chữa đề thực chiến 12</span>
+                </div>
+                <div class="panel-card-row">
+                    <span class="row-left">Thứ Tư · 19:30</span>
+                    <span class="row-badge">Bổ trợ chuyên đề Lý 11</span>
+                </div>
+                <div class="panel-card-row">
+                    <span class="row-left">Thứ Sáu · 19:30</span>
+                    <span class="row-badge">Lấy gốc thần tốc Lý 10</span>
+                </div>
+                <div class="panel-card-row">
+                    <span class="row-left">Chủ Nh�

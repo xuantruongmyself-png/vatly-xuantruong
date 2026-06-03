@@ -1,0 +1,857 @@
+<!DOCTYPE html>
+<html lang="vi">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Khóa Học | Vật Lý Xuân Trường</title>
+    <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/katex@0.16.9/dist/katex.min.css">
+    <script defer src="https://cdn.jsdelivr.net/npm/katex@0.16.9/dist/katex.min.js"></script>
+    <script defer src="https://cdn.jsdelivr.net/npm/katex@0.16.9/dist/contrib/auto-render.min.js"></script>
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800;900&family=DM+Mono:wght@400;500&display=swap" rel="stylesheet">
+    <style>
+        :root {
+            --bg:#f9f9f9; --card:#fff; --card2:#f5f5f5; --line:#e5e5e5;
+            --text:#0f0f0f; --sub:#6b7280; --blue:#0b84f3; --blue2:#0066cc;
+            --purple:#7c3aed; --green:#16a34a; --gold:#f59e0b; --red:#dc2626;
+            --radius:12px;
+        }
+        body.dark {
+            --bg:#0d1117; --card:#161b22; --card2:#1e2530; --line:rgba(255,255,255,0.08);
+            --text:#f0f6fc; --sub:#8b949e;
+        }
+        *, *::before, *::after { box-sizing:border-box; margin:0; padding:0; }
+        body { background:var(--bg); color:var(--text); font-family:'Inter',ui-sans-serif,sans-serif; -webkit-font-smoothing:antialiased; min-height:100vh; }
+        a { color:var(--blue); text-decoration:none; }
+        math { font-size:1.1em; } sub,sup { line-height:0; font-size:.78em; }
+        .container { max-width:1180px; margin:0 auto; padding:0 18px; }
+
+        /* ═══ HEADER ═══ */
+        header {
+            position:sticky; top:0; z-index:500; height:56px;
+            display:flex; align-items:center; justify-content:space-between; gap:14px; padding:0 28px;
+            background:rgba(255,255,255,0.92); backdrop-filter:blur(12px); border-bottom:1px solid var(--line);
+        }
+        body.dark header { background:rgba(13,17,23,0.92); }
+        .logo { display:flex; align-items:center; gap:10px; font-size:15px; font-weight:700; color:var(--text); }
+        .nav { display:flex; align-items:center; gap:8px; }
+        .nav a, .nav button { color:var(--sub); background:transparent; border:none; font-family:'Inter',sans-serif; font-size:14px; font-weight:500; padding:7px 14px; border-radius:7px; cursor:pointer; display:inline-flex; align-items:center; gap:7px; text-decoration:none; transition:all .15s; }
+        .nav a:hover, .nav button:hover { color:var(--text); background:var(--line); }
+        .nav a.active { color:var(--blue); background:rgba(11,132,243,.08); }
+        .who { font-size:13px; color:var(--sub); border:1px solid var(--line); padding:6px 14px; border-radius:100px; cursor:pointer; background:var(--card); font-weight:500; }
+        .who b { color:var(--text); }
+
+        .marquee { background:var(--card); border-bottom:1px solid var(--line); color:var(--blue); font-size:12.5px; font-weight:600; padding:7px 0; overflow:hidden; white-space:nowrap; }
+        .marquee span { display:inline-block; padding-left:100%; animation:marquee 24s linear infinite; }
+        @keyframes marquee { from{transform:translateX(0)} to{transform:translateX(-100%)} }
+
+        /* ═══ HOME VIEW ═══ */
+        .page-head { display:flex; align-items:center; justify-content:space-between; flex-wrap:wrap; gap:12px; margin:28px 0 18px; }
+        .page-head h1 { font-size:26px; font-weight:800; letter-spacing:-.03em; }
+        .toolbar { display:flex; align-items:center; gap:10px; flex-wrap:wrap; margin-bottom:20px; }
+        .tabs { display:flex; gap:8px; }
+        .tab-btn { border:1.5px solid var(--line); background:var(--card); color:var(--sub); padding:9px 16px; border-radius:50px; font-size:14px; font-weight:700; cursor:pointer; display:inline-flex; gap:8px; align-items:center; font-family:'Inter',sans-serif; transition:all .15s; }
+        .tab-btn.active { background:var(--text); color:#fff; border-color:var(--text); }
+        .tab-btn .pill { background:rgba(255,255,255,.22); border-radius:12px; padding:0 8px; font-size:12px; }
+        .grow { flex:1; }
+        .search-box { display:flex; align-items:center; gap:8px; background:var(--card); border:1.5px solid var(--line); border-radius:50px; padding:8px 14px; min-width:200px; }
+        .search-box input { background:transparent; border:none; outline:none; color:var(--text); font-family:'Inter',sans-serif; font-size:14px; width:100%; }
+        .search-box i { color:var(--sub); font-size:13px; }
+        select.sort { background:var(--card); color:var(--text); border:1.5px solid var(--line); border-radius:50px; padding:9px 14px; font-family:'Inter',sans-serif; font-size:14px; cursor:pointer; outline:none; }
+
+        /* ═══ COURSE CARDS ═══ */
+        .grid { display:grid; grid-template-columns:repeat(auto-fill,minmax(280px,1fr)); gap:20px; }
+        .course-card { background:var(--card); border:1.5px solid var(--line); border-radius:20px; overflow:hidden; cursor:pointer; transition:transform .18s,box-shadow .18s,border-color .18s; display:flex; flex-direction:column; }
+        .course-card:hover { transform:translateY(-4px); border-color:var(--blue); box-shadow:0 12px 30px rgba(11,132,243,.12); }
+        .cc-thumb { height:150px; display:flex; align-items:center; justify-content:center; font-size:60px; position:relative; background:var(--card2); border-bottom:1.5px solid var(--line); }
+        .cc-thumb img { width:100%; height:100%; object-fit:cover; }
+        .cc-new { position:absolute; top:10px; left:10px; background:var(--red); color:#fff; font-size:11px; font-weight:700; padding:3px 10px; border-radius:20px; }
+        .cc-body { padding:16px 18px 18px; display:flex; flex-direction:column; flex:1; }
+        .cc-title { font-size:17px; font-weight:800; line-height:1.35; margin-bottom:6px; letter-spacing:-.01em; }
+        .cc-desc { font-size:13px; color:var(--sub); line-height:1.5; margin-bottom:14px; flex:1; }
+        .cc-meta { font-size:12.5px; color:var(--sub); display:flex; justify-content:space-between; margin-bottom:7px; }
+        .cc-meta b { color:var(--green); font-weight:700; }
+        .bar { height:6px; background:var(--line); border-radius:6px; overflow:hidden; }
+        .bar > i { display:block; height:100%; background:linear-gradient(90deg,var(--green),var(--blue)); border-radius:6px; transition:width .4s; }
+        .cc-btn { margin-top:14px; text-align:center; padding:10px; border-radius:50px; font-weight:700; font-size:14px; background:var(--text); color:#fff; border:none; transition:background .15s; }
+        .course-card:hover .cc-btn { background:var(--blue); }
+
+        /* ═══ BREADCRUMB ═══ */
+        .crumb { display:flex; align-items:center; gap:8px; flex-wrap:wrap; font-size:13.5px; color:var(--sub); margin:22px 0 10px; }
+        .crumb a { color:var(--sub); cursor:pointer; } .crumb a:hover { color:var(--blue); }
+        .crumb .sep { opacity:.5; } .crumb .cur { color:var(--text); font-weight:700; }
+
+        /* ═══ COURSE DETAIL ═══ */
+        .course-hero { background:var(--card); border:1.5px solid var(--line); border-radius:20px; padding:24px; margin-bottom:18px; display:flex; gap:18px; align-items:center; flex-wrap:wrap; }
+        .ch-icon { font-size:46px; width:84px; height:84px; border-radius:16px; display:flex; align-items:center; justify-content:center; background:var(--card2); border:1.5px solid var(--line); flex-shrink:0; overflow:hidden; }
+        .ch-icon img { width:100%; height:100%; object-fit:cover; }
+        .course-hero h1 { font-size:23px; font-weight:800; margin-bottom:6px; letter-spacing:-.02em; }
+        .course-hero p { color:var(--sub); font-size:14px; line-height:1.5; }
+        .ch-prog { margin-top:12px; max-width:420px; }
+
+        .chapter { background:var(--card); border:1.5px solid var(--line); border-radius:16px; margin-bottom:14px; overflow:hidden; }
+        .chapter-head { display:flex; align-items:center; gap:14px; padding:16px 20px; cursor:pointer; user-select:none; }
+        .chapter-head:hover { background:var(--card2); }
+        .chapter-num { width:30px; height:30px; flex-shrink:0; border-radius:9px; background:rgba(11,132,243,.1); color:var(--blue); display:flex; align-items:center; justify-content:center; font-weight:800; font-size:14px; }
+        .chapter-title { flex:1; font-size:16px; font-weight:700; line-height:1.4; }
+        .chapter-meta { font-size:12.5px; color:var(--sub); white-space:nowrap; }
+        .chapter-meta .done { color:var(--green); font-weight:700; }
+        .chapter-caret { color:var(--sub); transition:transform .2s; }
+        .chapter.open .chapter-caret { transform:rotate(90deg); }
+        .lesson-list { display:none; border-top:1.5px solid var(--line); }
+        .chapter.open .lesson-list { display:block; }
+        .lesson-row { display:flex; align-items:center; gap:14px; padding:13px 20px 13px 24px; cursor:pointer; border-top:1px solid var(--line); transition:background .12s; }
+        .lesson-row:first-child { border-top:none; }
+        .lesson-row:hover { background:var(--card2); }
+        .lesson-ic { width:30px; height:30px; flex-shrink:0; border-radius:8px; display:flex; align-items:center; justify-content:center; font-size:13px; background:var(--line); color:var(--sub); }
+        .lesson-row.watched .lesson-ic { background:rgba(22,163,74,.12); color:var(--green); }
+        .lesson-info { flex:1; min-width:0; }
+        .lesson-name { font-size:14.5px; font-weight:600; line-height:1.4; }
+        .lesson-date { font-size:12px; color:var(--sub); margin-top:2px; }
+        .lesson-status { font-size:11.5px; font-weight:700; padding:3px 11px; border-radius:50px; white-space:nowrap; background:var(--line); color:var(--sub); }
+        .lesson-row.watched .lesson-status { background:rgba(22,163,74,.12); color:var(--green); }
+        .badge-new { background:var(--red); color:#fff; font-size:10.5px; font-weight:700; padding:2px 8px; border-radius:12px; margin-left:8px; }
+
+        /* ═══ LESSON PLAYER LAYOUT ═══ */
+        .player-layout { display:grid; grid-template-columns:1fr 300px; gap:20px; margin-top:8px; align-items:start; }
+        .lesson-main { min-width:0; }
+        .lesson-sidebar { position:sticky; top:68px; }
+
+        .video-box { background:#000; border:1.5px solid var(--line); border-radius:var(--radius); overflow:hidden; }
+        .ratio { position:relative; width:100%; padding-top:56.25%; }
+        .ratio iframe { position:absolute; inset:0; width:100%; height:100%; border:0; }
+        .no-video { position:absolute; inset:0; display:flex; flex-direction:column; gap:12px; align-items:center; justify-content:center; color:var(--sub); text-align:center; padding:20px; }
+
+        .lesson-detail { background:var(--card); border:1.5px solid var(--line); border-radius:var(--radius); padding:22px; margin-top:16px; }
+        .lesson-detail h1 { font-size:21px; font-weight:800; margin-bottom:6px; letter-spacing:-.02em; }
+        .ld-sub { color:var(--sub); font-size:13.5px; margin-bottom:14px; }
+        .ld-desc { font-size:15px; line-height:1.7; }
+        .ld-actions { display:flex; gap:10px; flex-wrap:wrap; margin-top:18px; }
+        .btn { border:none; border-radius:50px; padding:11px 20px; font-family:'Inter',sans-serif; font-size:14px; font-weight:700; cursor:pointer; display:inline-flex; align-items:center; gap:8px; transition:all .15s; }
+        .btn-done { background:var(--green); color:#fff; }
+        .btn-done.is-done { background:rgba(22,163,74,.1); color:var(--green); border:1.5px solid rgba(22,163,74,.3); }
+        .btn-nav { background:var(--card2); color:var(--text); border:1.5px solid var(--line); }
+        .btn-nav:disabled { opacity:.4; cursor:not-allowed; }
+        .btn-ghost { background:transparent; border:1.5px solid var(--line); color:var(--sub); }
+        .btn-ghost:hover { color:var(--text); border-color:var(--blue); }
+
+        /* ═══ PRACTICE QUIZ SECTION ═══ */
+        .section-block { background:var(--card); border:1.5px solid var(--line); border-radius:var(--radius); margin-top:16px; overflow:hidden; }
+        .section-block-head { display:flex; align-items:center; gap:12px; padding:16px 22px; border-bottom:1.5px solid var(--line); background:var(--card2); }
+        .section-block-head .s-icon { width:36px; height:36px; border-radius:9px; display:flex; align-items:center; justify-content:center; font-size:16px; flex-shrink:0; }
+        .s-icon-blue { background:rgba(11,132,243,.1); color:var(--blue); }
+        .s-icon-green { background:rgba(22,163,74,.1); color:var(--green); }
+        .section-block-head h3 { font-size:16px; font-weight:800; letter-spacing:-.01em; margin-bottom:2px; }
+        .section-block-head p { font-size:13px; color:var(--sub); }
+        .section-block-body { padding:20px 22px; }
+
+        .pq-block { margin-bottom:18px; padding-bottom:18px; border-bottom:1px solid var(--line); }
+        .pq-block:last-child { margin-bottom:0; padding-bottom:0; border-bottom:none; }
+        .pq-text { font-size:16px; font-weight:600; line-height:1.65; margin-bottom:14px; }
+        .pq-opts { display:flex; flex-direction:column; gap:8px; }
+        .pq-opt {
+            display:flex; align-items:center; gap:12px;
+            padding:12px 16px; border:1.5px solid var(--line); border-radius:9px;
+            cursor:pointer; transition:all .15s; font-size:15px; font-weight:500; line-height:1.5;
+        }
+        .pq-opt:hover { border-color:var(--blue); background:rgba(11,132,243,.03); }
+        .pq-opt input[type=radio] { accent-color:var(--blue); width:16px; height:16px; flex-shrink:0; }
+        .pq-letter { font-family:'DM Mono',monospace; font-size:12px; font-weight:700; color:var(--sub); width:18px; flex-shrink:0; }
+        .pq-opt.result-correct { border-color:var(--green); background:#f0fdf4; }
+        .pq-opt.result-wrong { border-color:var(--red); background:#fff5f5; }
+        .pq-opt.result-correct .pq-letter { color:var(--green); }
+        .pq-tag { font-size:12px; font-weight:700; margin-left:auto; flex-shrink:0; padding:2px 8px; border-radius:12px; }
+        .pq-tag.ok { background:#d1f4e0; color:#15803d; }
+        .pq-tag.wrong { background:#fee2e2; color:#b91c1c; }
+        .pq-tag.correct-mark { background:#d1f4e0; color:#15803d; }
+
+        .quiz-actions { display:flex; align-items:center; gap:12px; margin-top:20px; flex-wrap:wrap; }
+        .btn-check { background:var(--blue); color:#fff; border:none; border-radius:50px; padding:12px 28px; font-family:'Inter',sans-serif; font-size:14px; font-weight:700; cursor:pointer; display:inline-flex; align-items:center; gap:8px; transition:opacity .15s; }
+        .btn-check:hover { opacity:.85; }
+        .btn-reset { background:transparent; border:1.5px solid var(--line); color:var(--sub); border-radius:50px; padding:11px 20px; font-family:'Inter',sans-serif; font-size:14px; font-weight:600; cursor:pointer; transition:all .15s; }
+        .btn-reset:hover { border-color:#aaa; color:var(--text); }
+        .quiz-score { font-size:14px; font-weight:700; padding:10px 16px; border-radius:50px; background:var(--card2); border:1.5px solid var(--line); }
+        .quiz-score.great { background:#d1f4e0; border-color:var(--green); color:#15803d; }
+
+        /* ═══ SIDEBAR ═══ */
+        .side-list { background:var(--card); border:1.5px solid var(--line); border-radius:var(--radius); overflow:hidden; max-height:calc(100vh - 90px); overflow-y:auto; }
+        .side-hd { padding:14px 16px 12px; border-bottom:1.5px solid var(--line); background:var(--card2); }
+        .side-hd-title { font-size:13px; font-weight:700; color:var(--text); margin-bottom:6px; white-space:nowrap; overflow:hidden; text-overflow:ellipsis; }
+        .side-hd-prog { font-size:12px; color:var(--sub); margin-bottom:6px; }
+        .side-chap { border-top:1.5px solid var(--line); }
+        .side-chap:first-of-type { border-top:none; }
+        .side-chap-name { display:flex; align-items:center; gap:8px; padding:10px 14px 8px; font-size:12px; font-weight:700; color:var(--sub); text-transform:uppercase; letter-spacing:.5px; }
+        .side-chap-num { width:18px; height:18px; border-radius:5px; background:rgba(11,132,243,.1); color:var(--blue); display:flex; align-items:center; justify-content:center; font-size:10px; font-weight:800; flex-shrink:0; }
+        .side-chap-cnt { margin-left:auto; font-size:11px; font-weight:600; }
+        .side-item { display:flex; gap:10px; padding:9px 16px; cursor:pointer; font-size:13px; align-items:center; transition:background .12s; border-top:1px solid var(--line); }
+        .side-item:first-of-type { border-top:none; }
+        .side-item:hover { background:var(--card2); }
+        .side-item.active { background:rgba(11,132,243,.07); border-left:3px solid var(--blue); }
+        .si-ic { color:var(--sub); font-size:11px; flex-shrink:0; } .side-item.done .si-ic { color:var(--green); }
+        .si-name { flex:1; line-height:1.4; }
+
+        /* ═══ SOLUTION VIDEO ═══ */
+        .solution-video { margin-top:10px; }
+
+        /* ═══ STATES ═══ */
+        .loading,.empty { text-align:center; padding:60px 20px; color:var(--sub); }
+        .loading i { color:var(--blue); font-size:28px; }
+        .empty i { font-size:40px; opacity:.4; margin-bottom:14px; }
+        .notice { background:rgba(245,158,11,.08); border:1.5px solid rgba(245,158,11,.3); color:#92400e; border-radius:12px; padding:12px 16px; font-size:13.5px; margin-bottom:18px; line-height:1.6; }
+        .toast { position:fixed; bottom:24px; left:50%; transform:translateX(-50%) translateY(120px); background:var(--text); color:#fff; padding:12px 22px; border-radius:50px; font-weight:600; font-size:14px; box-shadow:0 8px 24px rgba(0,0,0,.15); transition:transform .3s; z-index:900; border:1.5px solid var(--line); }
+        .toast.show { transform:translateX(-50%) translateY(0); }
+        .toast.ok { border-color:var(--green); } .toast.err { border-color:var(--red); }
+
+        /* ═══ IDENTITY GATE ═══ */
+        .gate { position:fixed; inset:0; background:rgba(255,255,255,0.97); backdrop-filter:blur(8px); display:flex; align-items:center; justify-content:center; z-index:9999; padding:18px; }
+        body.dark .gate { background:rgba(13,17,23,0.97); }
+        .gate-box { background:var(--card); border:1px solid var(--line); border-radius:16px; padding:40px; width:100%; max-width:420px; box-shadow:0 8px 40px rgba(0,0,0,.07); }
+        .gate-box .gi { font-size:40px; color:var(--blue); text-align:center; margin-bottom:14px; }
+        .gate-box h3 { font-size:22px; font-weight:900; letter-spacing:-.03em; text-align:center; margin-bottom:6px; }
+        .gate-box p { text-align:center; color:var(--sub); font-size:13px; margin-bottom:24px; line-height:1.6; }
+        .fg { margin-bottom:14px; } .fg label { display:block; font-size:13px; font-weight:600; margin-bottom:6px; }
+        .fg label span { color:var(--red); }
+        .fg input { width:100%; padding:11px 14px; border-radius:8px; border:1px solid var(--line); background:var(--bg); color:var(--text); font-family:'Inter',sans-serif; font-size:14px; outline:none; transition:border-color .15s; }
+        .fg input:focus { border-color:var(--blue); background:var(--card); }
+        .gate-box .go { width:100%; padding:13px; border:none; border-radius:9px; cursor:pointer; font-family:'Inter',sans-serif; font-weight:700; font-size:14px; background:var(--text); color:#fff; transition:opacity .15s; margin-top:4px; }
+        .gate-box .go:hover { opacity:.85; }
+        .gate-err { color:var(--red); font-size:13px; min-height:18px; margin-top:8px; text-align:center; }
+
+        footer { text-align:center; color:var(--sub); font-size:13px; padding:40px 18px 50px; margin-top:30px; border-top:1.5px solid var(--line); }
+
+        @media(max-width:900px) { .player-layout { grid-template-columns:1fr; } .lesson-sidebar { position:static; } .side-list { max-height:400px; } }
+        @media(max-width:560px) { header { padding:12px 16px; } .nav a span,.nav button span { display:none; } }
+    </style>
+</head>
+<body>
+
+    <!-- GATE -->
+    <div class="gate" id="gate">
+        <div class="gate-box">
+            <div class="gi"><i class="fa-solid fa-graduation-cap"></i></div>
+            <h3>Chào mừng đến lớp học!</h3>
+            <p>Nhập thông tin để hệ thống lưu tiến độ học tập của em.</p>
+            <div class="fg"><label>Họ và tên <span>*</span></label><input id="g-name" placeholder="Ví dụ: Nguyễn Văn Ánh"></div>
+            <div class="fg"><label>Lớp / Trường <span>*</span></label><input id="g-class" placeholder="Ví dụ: 12A1 - THPT Chuyên"></div>
+            <div class="fg"><label>Số điện thoại / Zalo <span>*</span></label><input id="g-phone" placeholder="Ví dụ: 0987654321"></div>
+            <button class="go" onclick="saveIdentity()">Vào học ngay</button>
+            <div class="gate-err" id="g-err"></div>
+        </div>
+    </div>
+
+    <header>
+        <a class="logo" href="index.html">
+            <svg width="26" height="26" viewBox="0 0 28 28" fill="none">
+                <circle cx="14" cy="14" r="2.8" fill="#0b84f3"/>
+                <ellipse cx="14" cy="14" rx="12" ry="5" stroke="#0b84f3" stroke-width="1.3" fill="none" opacity="0.7"/>
+                <ellipse cx="14" cy="14" rx="12" ry="5" stroke="#0b84f3" stroke-width="1.3" fill="none" opacity="0.5" transform="rotate(60 14 14)"/>
+                <ellipse cx="14" cy="14" rx="12" ry="5" stroke="#0b84f3" stroke-width="1.3" fill="none" opacity="0.5" transform="rotate(-60 14 14)"/>
+            </svg>
+            Vật Lý Xuân Trường
+        </a>
+        <div class="nav">
+            <a id="nav-home" onclick="go('#home')"><i class="fa-solid fa-house" style="font-size:12px"></i> <span>Trang chủ</span></a>
+            <a href="danhsach-ly12.html"><i class="fa-solid fa-file-lines" style="font-size:12px"></i> <span>Thi thử</span></a>
+            <button onclick="toggleTheme()"><i class="fa-solid fa-circle-half-stroke" style="font-size:12px"></i> <span>Giao diện</span></button>
+            <span class="who" id="who" onclick="changeIdentity()"></span>
+        </div>
+    </header>
+    <div class="marquee"><span>⚡ Xem video trên máy tính để trải nghiệm tốt nhất · Hệ thống tự lưu tiến độ sau mỗi bài học · Chúc các em học tốt và đạt điểm cao!</span></div>
+
+    <main class="container" id="app">
+        <div class="loading"><i class="fa-solid fa-spinner fa-spin"></i><p style="margin-top:12px">Đang tải khóa học...</p></div>
+    </main>
+
+    <footer>© Vật Lý Xuân Trường — Học là phải hiểu bản chất!</footer>
+    <div class="toast" id="toast"></div>
+
+<script>
+/* ═══════════════════════════════════════════
+   CẤU HÌNH
+═══════════════════════════════════════════ */
+const APPS_SCRIPT_URL = "https://script.google.com/macros/s/AKfycbxT-pZNJJbbCiv1HfN99m10Z1kXcRzEhIzMyx6K8u2TDLobpylsXzq_zQKaY9zkHC8m/exec";
+const LS_HS   = "vlxt_hocsinh";
+const SEP     = "|||";
+const NEW_DAYS = 10;
+
+/* ═══════════════════════════════════════════
+   TRẠNG THÁI
+═══════════════════════════════════════════ */
+let HS = null;
+let COURSES = [];
+let WATCHED = new Set();
+let USING_DEMO = false;
+
+/* ═══════════════════════════════════════════
+   TIỆN ÍCH
+═══════════════════════════════════════════ */
+const $ = s => document.querySelector(s);
+const app = () => document.getElementById('app');
+
+function norm(s){ return(s==null?'':s).toString().toLowerCase().normalize('NFD').replace(/[̀-ͯ]/g,'').replace(/đ/g,'d').replace(/[^a-z0-9]/g,''); }
+function esc(s){ return(s==null?'':s).toString().replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/"/g,'&quot;'); }
+function field(row,names){ for(const k in row){ const nk=norm(k); for(const n of names){ if(nk===norm(n)) return row[k]; } } return ''; }
+function toast(msg,type){ const t=$('#toast'); t.className='toast show '+(type||''); t.innerHTML=msg; clearTimeout(t._t); t._t=setTimeout(()=>t.className='toast',2600); }
+function renderMath(el){ if(typeof renderMathInElement==='function'){ try{ renderMathInElement(el,{delimiters:[{left:'$$',right:'$$',display:true},{left:'$',right:'$',display:false}]}); }catch(e){} } }
+function ytId(url){ if(!url) return ''; url=url.toString().trim(); if(/^[A-Za-z0-9_-]{11}$/.test(url)) return url; const m=url.match(/(?:youtu\.be\/|v=|embed\/|shorts\/)([A-Za-z0-9_-]{11})/); return m?m[1]:''; }
+function daysAgo(d){ if(!d) return 9999; const p=parseVND(d); if(!p) return 9999; return Math.floor((Date.now()-p)/86400000); }
+function parseVND(s){ s=(s||'').toString().trim(); if(!s) return null; const m=s.match(/^(\d{1,2})[\/\-.](\d{1,2})[\/\-.](\d{2,4})$/); if(m){ let y=+m[3]; if(y<100)y+=2000; return new Date(y,(+m[2])-1,+m[1]).getTime(); } const d=new Date(s); return isNaN(d)?null:d.getTime(); }
+
+/* ═══════════════════════════════════════════
+   DANH TÍNH HỌC SINH
+═══════════════════════════════════════════ */
+function loadIdentity(){ try{ HS=JSON.parse(localStorage.getItem(LS_HS)||'null'); }catch(e){ HS=null; } }
+function saveIdentity(){
+    const ten=$('#g-name').value.trim(), lop=$('#g-class').value.trim(), sdt=$('#g-phone').value.trim();
+    if(!ten||!lop||!sdt){ $('#g-err').textContent='Vui lòng điền đầy đủ thông tin nhé!'; return; }
+    HS={ten,lop,sdt}; localStorage.setItem(LS_HS,JSON.stringify(HS));
+    $('#gate').style.display='none'; boot();
+}
+function changeIdentity(){ if(!confirm('Đổi sang thông tin học sinh khác?')) return; localStorage.removeItem(LS_HS); location.reload(); }
+function renderWho(){ const w=$('#who'); if(w) w.innerHTML=HS?`<i class="fa-solid fa-user"></i> <b>${esc(HS.ten)}</b>`:''; }
+
+/* ═══════════════════════════════════════════
+   TẢI DỮ LIỆU
+═══════════════════════════════════════════ */
+const _LC_KEY='vlxt_lessons_cache', _LC_TTL=5*60*1000;
+function _lcSave(rows){ try{ localStorage.setItem(_LC_KEY,JSON.stringify({ts:Date.now(),rows})); }catch(e){} }
+function _lcLoad(){ try{ const c=JSON.parse(localStorage.getItem(_LC_KEY)||'null'); if(c&&Date.now()-c.ts<_LC_TTL) return c.rows; }catch(e){} return null; }
+function _lcClear(){ try{ localStorage.removeItem(_LC_KEY); }catch(e){} }
+async function _fetchFromSheets(){
+    const r=await fetch(APPS_SCRIPT_URL+'?type=baihoc&t='+Date.now());
+    const data=await r.json();
+    const rows=Array.isArray(data)?data:(data.baihoc||data.data||[]);
+    return rows.filter(x=>field(x,['khoahoc','khoa','course','mon']).toString().trim());
+}
+async function fetchLessons(){
+    const cached=_lcLoad();
+    if(cached){ USING_DEMO=false; _fetchFromSheets().then(rows=>{ if(rows.length) _lcSave(rows); }).catch(()=>{}); return cached; }
+    try{
+        const valid=await _fetchFromSheets();
+        if(valid.length){ USING_DEMO=false; _lcSave(valid); return valid; }
+    }catch(e){ console.warn('Chưa kết nối Sheets:',e); }
+    USING_DEMO=true; return DEMO_ROWS;
+}
+
+async function fetchProgress(){
+    WATCHED=new Set();
+    if(!HS||USING_DEMO){
+        try{ (JSON.parse(localStorage.getItem('vlxt_demo_watched')||'[]')).forEach(k=>WATCHED.add(k)); }catch(e){}
+        return;
+    }
+    try{
+        const r=await fetch(APPS_SCRIPT_URL+'?type=tiendo&hs='+encodeURIComponent(HS.sdt)+'&t='+Date.now());
+        const data=await r.json();
+        const arr=Array.isArray(data)?data:(data.tiendo||data.data||[]);
+        arr.forEach(it=>{ const k=(typeof it==='string')?it:field(it,['lesson','bai','key']); if(k) WATCHED.add(k.toString()); });
+    }catch(e){ console.warn('Chưa đọc tiến độ:',e); }
+}
+
+/* ═══════════════════════════════════════════
+   XÂY DỰNG CẤU TRÚC KHÓA HỌC
+═══════════════════════════════════════════ */
+function buildCourses(rows){
+    const cmap=new Map();
+    rows.forEach((row,idx)=>{
+        const cname=field(row,['khoahoc','khoa','course','mon']).toString().trim();
+        const chname=(field(row,['chuong','chapter','phan'])||'Nội dung').toString().trim();
+        const lname=field(row,['tenbai','bai','baihoc','tieude','title','ten']).toString().trim();
+        if(!cname||!lname) return;
+        if(!cmap.has(cname)) cmap.set(cname,{name:cname, desc:field(row,['motakhoa','mieutakhoa','desckhoa','mota']).toString().trim(), img:field(row,['anhkhoa','anh','thumb','hinh','icon','emoji']).toString().trim(), order:idx, chMap:new Map()});
+        const c=cmap.get(cname);
+        if(!c.desc){ const d=field(row,['motakhoa','mieutakhoa','desckhoa']).toString().trim(); if(d)c.desc=d; }
+        if(!c.img){ const im=field(row,['anhkhoa','anh','thumb','hinh','icon','emoji']).toString().trim(); if(im)c.img=im; }
+        if(!c.chMap.has(chname)) c.chMap.set(chname,{name:chname,order:c.chMap.size,lessons:[]});
+        const ch=c.chMap.get(chname);
+        // Trích xuất bài tập — hỗ trợ JSON hoặc link
+        let baitap = field(row,['baitap','quiz','cauhoi','tracnghiem','luyen']).toString().trim();
+        let baitapArr = [];
+        if(baitap){ try{ baitapArr=JSON.parse(baitap); }catch(e){ baitapArr=[]; } }
+        ch.lessons.push({
+            key:[cname,chname,lname].join(SEP),
+            name:lname,
+            video:field(row,['video','youtube','link','url','lienket']).toString().trim(),
+            videogiai:field(row,['videogiai','videochua','videogiangiai','chua','giai']).toString().trim(),
+            desc:field(row,['motabai','noidung','ghichu','desc']).toString().trim(),
+            date:field(row,['ngaydang','ngay','date','capnhat']).toString().trim(),
+            baitap: baitapArr
+        });
+    });
+    return [...cmap.values()].map(c=>{
+        const chapters=[...c.chMap.values()];
+        const total=chapters.reduce((s,ch)=>s+ch.lessons.length,0);
+        return {name:c.name,desc:c.desc,img:c.img,order:c.order,chapters,total};
+    });
+}
+
+function courseWatched(c){ let n=0; c.chapters.forEach(ch=>ch.lessons.forEach(l=>{ if(WATCHED.has(l.key))n++; })); return n; }
+function coursePct(c){ return c.total?Math.round(courseWatched(c)/c.total*100):0; }
+function courseNew(c){ let n=0; c.chapters.forEach(ch=>ch.lessons.forEach(l=>{ if(daysAgo(l.date)<=NEW_DAYS)n++; })); return n; }
+function findCourse(name){ return COURSES.find(c=>c.name===name); }
+function flatLessons(c){ const out=[]; c.chapters.forEach(ch=>ch.lessons.forEach(l=>out.push(Object.assign({chapter:ch.name},l)))); return out; }
+function findLesson(key){ for(const c of COURSES) for(const ch of c.chapters) for(const l of ch.lessons) if(l.key===key) return {course:c,chapter:ch,lesson:l}; return null; }
+
+/* ═══════════════════════════════════════════
+   ĐÁNH DẤU ĐÃ HỌC
+═══════════════════════════════════════════ */
+function markWatched(key){
+    if(WATCHED.has(key)) return;
+    WATCHED.add(key);
+    if(USING_DEMO){ localStorage.setItem('vlxt_demo_watched',JSON.stringify([...WATCHED])); toast('<i class="fa-solid fa-circle-check"></i> Đã lưu (chế độ demo)','ok'); return; }
+    const info=findLesson(key);
+    const payload={action:'saveProgress',hs:HS.sdt,ten:HS.ten,lop:HS.lop,khoa:info?info.course.name:'',lesson:key,ngay:new Date().toLocaleDateString('vi-VN')};
+    fetch(APPS_SCRIPT_URL,{method:'POST',mode:'no-cors',headers:{'Content-Type':'text/plain;charset=utf-8'},body:JSON.stringify(payload)})
+        .then(()=>toast('<i class="fa-solid fa-circle-check"></i> Đã lưu tiến độ!','ok'))
+        .catch(()=>toast('<i class="fa-solid fa-triangle-exclamation"></i> Lưu tiến độ gặp sự cố','err'));
+}
+
+/* ═══════════════════════════════════════════
+   ROUTER
+═══════════════════════════════════════════ */
+function go(hash){ if(location.hash===hash) route(); else location.hash=hash; }
+window.addEventListener('hashchange',route);
+function route(){
+    const h=decodeURIComponent(location.hash||'#home');
+    const nh=$('#nav-home'); if(nh) nh.classList.toggle('active',h==='#home'||h==='');
+    if(h.startsWith('#course/')) renderCourse(h.slice(8));
+    else if(h.startsWith('#lesson/')) renderLesson(h.slice(8));
+    else renderHome();
+    window.scrollTo({top:0,behavior:'smooth'});
+}
+
+/* ═══════════════════════════════════════════
+   VIEW: TRANG CHỦ
+═══════════════════════════════════════════ */
+let homeState={tab:'all',sort:'default',q:''};
+function renderHome(){
+    const mine=COURSES.filter(c=>courseWatched(c)>0);
+    let list=homeState.tab==='mine'?mine.slice():COURSES.slice();
+    if(homeState.q){ const q=norm(homeState.q); list=list.filter(c=>norm(c.name).includes(q)||norm(c.desc).includes(q)); }
+    if(homeState.sort==='name') list.sort((a,b)=>a.name.localeCompare(b.name,'vi'));
+    else if(homeState.sort==='progress') list.sort((a,b)=>coursePct(b)-coursePct(a));
+    else list.sort((a,b)=>a.order-b.order);
+
+    let h='';
+    if(USING_DEMO) h+=`<div class="notice"><i class="fa-solid fa-circle-info"></i> Đang hiển thị <b>dữ liệu mẫu</b>. Tạo tab <b>BaiHoc</b> trong Google Sheets và điền dữ liệu để hiện bài giảng thật.</div>`;
+    h+=`<div class="page-head"><h1>Chọn khóa học của thầy Trường</h1></div>
+        <div class="toolbar">
+            <div class="tabs">
+                <button class="tab-btn ${homeState.tab==='all'?'active':''}" onclick="setTab('all')"><i class="fa-solid fa-layer-group"></i> Tất cả <span class="pill">${COURSES.length}</span></button>
+                <button class="tab-btn ${homeState.tab==='mine'?'active':''}" onclick="setTab('mine')"><i class="fa-solid fa-bookmark"></i> Đang học <span class="pill">${mine.length}</span></button>
+            </div>
+            <div class="grow"></div>
+            <div class="search-box"><i class="fa-solid fa-magnifying-glass"></i><input placeholder="Tìm khóa học..." value="${esc(homeState.q)}" oninput="onSearch(this.value)"></div>
+            <select class="sort" onchange="setSort(this.value)">
+                <option value="default" ${homeState.sort==='default'?'selected':''}>Mặc định</option>
+                <option value="name" ${homeState.sort==='name'?'selected':''}>Tên A → Z</option>
+                <option value="progress" ${homeState.sort==='progress'?'selected':''}>Tiến độ cao nhất</option>
+            </select>
+        </div>`;
+    if(!list.length){ h+=`<div class="empty"><i class="fa-solid fa-box-open"></i><p>${homeState.tab==='mine'?'Em chưa bắt đầu khóa nào. Hãy chọn một khóa để học!':'Chưa có khóa học nào.'}</p></div>`; }
+    else{
+        h+='<div class="grid">';
+        list.forEach(c=>{
+            const pct=coursePct(c),w=courseWatched(c),nw=courseNew(c);
+            const thumb=c.img&&/^https?:|^data:/.test(c.img)?`<img src="${esc(c.img)}" alt="">`:`<span>${c.img||'📘'}</span>`;
+            h+=`<div class="course-card" onclick="go('#course/${encodeURIComponent(c.name)}')">
+                <div class="cc-thumb">${thumb}${nw?`<span class="cc-new">${nw} bài mới</span>`:''}</div>
+                <div class="cc-body">
+                    <div class="cc-title">${esc(c.name)}</div>
+                    <div class="cc-desc">${esc(c.desc||'Khóa học Vật lý — học cùng thầy Trường.')}</div>
+                    <div class="cc-meta"><span>${c.chapters.length} chương · ${c.total} bài giảng</span><b>${pct}%</b></div>
+                    <div class="bar"><i style="width:${pct}%"></i></div>
+                    <div class="cc-btn"><i class="fa-solid fa-play"></i> ${w>0?'Tiếp tục học':'Bắt đầu học'}</div>
+                </div></div>`;
+        });
+        h+='</div>';
+    }
+    app().innerHTML=h; renderMath(app());
+}
+function setTab(t){ homeState.tab=t; renderHome(); }
+function setSort(s){ homeState.sort=s; renderHome(); }
+let _sT; function onSearch(v){ homeState.q=v; clearTimeout(_sT); _sT=setTimeout(renderHome,180); }
+
+/* ═══════════════════════════════════════════
+   VIEW: CHI TIẾT KHÓA HỌC
+═══════════════════════════════════════════ */
+function renderCourse(name){
+    const c=findCourse(name);
+    if(!c){ app().innerHTML=`<div class="empty"><i class="fa-solid fa-circle-question"></i><p>Không tìm thấy khóa học.</p><p><a onclick="go('#home')">← Về trang chủ</a></p></div>`; return; }
+    const pct=coursePct(c),w=courseWatched(c);
+    const thumb=c.img&&/^https?:|^data:/.test(c.img)?`<img src="${esc(c.img)}" alt="">`:(c.img||'📘');
+    let h=`<div class="crumb"><a onclick="go('#home')">Khóa học</a><span class="sep">›</span><span class="cur">${esc(c.name)}</span></div>
+        <div class="course-hero">
+            <div class="ch-icon">${thumb}</div>
+            <div style="flex:1;min-width:200px">
+                <h1>${esc(c.name)}</h1>
+                <p>${esc(c.desc||'Khóa học Vật lý — học cùng thầy Trường.')}</p>
+                <div class="ch-prog">
+                    <div class="cc-meta"><span>Đã học ${w}/${c.total} bài</span><b>${pct}%</b></div>
+                    <div class="bar"><i style="width:${pct}%"></i></div>
+                </div>
+            </div>
+        </div>`;
+    c.chapters.forEach((ch,i)=>{
+        const cw=ch.lessons.filter(l=>WATCHED.has(l.key)).length;
+        const open=i===0||cw<ch.lessons.length;
+        h+=`<div class="chapter ${open?'open':''}">
+            <div class="chapter-head" onclick="this.parentElement.classList.toggle('open')">
+                <div class="chapter-num">${i+1}</div>
+                <div class="chapter-title">${esc(ch.name)}</div>
+                <div class="chapter-meta"><span class="${cw===ch.lessons.length&&ch.lessons.length?'done':''}">${cw}/${ch.lessons.length} bài</span></div>
+                <i class="fa-solid fa-chevron-right chapter-caret"></i>
+            </div>
+            <div class="lesson-list">`;
+        ch.lessons.forEach(l=>{
+            const done=WATCHED.has(l.key); const isNew=daysAgo(l.date)<=NEW_DAYS;
+            h+=`<div class="lesson-row ${done?'watched':''}" onclick="go('#lesson/${encodeURIComponent(l.key)}')">
+                <div class="lesson-ic"><i class="fa-solid ${done?'fa-circle-check':'fa-play'}"></i></div>
+                <div class="lesson-info">
+                    <div class="lesson-name">${esc(l.name)}${isNew?'<span class="badge-new">MỚI</span>':''}${l.baitap&&l.baitap.length?'<span style="margin-left:6px;font-size:10.5px;background:rgba(11,132,243,.1);color:var(--blue);border-radius:10px;padding:2px 7px;font-weight:700"><i class="fa-solid fa-pen-to-square" style="font-size:9px"></i> Quiz</span>':''}</div>
+                    ${l.date?`<div class="lesson-date"><i class="fa-regular fa-calendar"></i> ${esc(l.date)}</div>`:''}
+                </div>
+                <div class="lesson-status">${done?'✓ Đã xem':'Chưa xem'}</div>
+            </div>`;
+        });
+        h+=`</div></div>`;
+    });
+    app().innerHTML=h; renderMath(app());
+}
+
+/* ═══════════════════════════════════════════
+   VIEW: BÀI HỌC (VIDEO + QUIZ + VIDEO CHỮA)
+═══════════════════════════════════════════ */
+function renderLesson(key){
+    const info=findLesson(key);
+    if(!info){ app().innerHTML=`<div class="empty"><i class="fa-solid fa-circle-question"></i><p>Không tìm thấy bài học.</p><p><a onclick="go('#home')">← Về trang chủ</a></p></div>`; return; }
+    const {course,chapter,lesson}=info;
+    const flat=flatLessons(course); const idx=flat.findIndex(l=>l.key===key);
+    const prev=idx>0?flat[idx-1]:null, next=idx<flat.length-1?flat[idx+1]:null;
+    const vid=ytId(lesson.video); const done=WATCHED.has(key);
+    const pct=coursePct(course), w=courseWatched(course);
+
+    // Video player
+    const videoHtml=vid
+        ?`<div class="ratio"><iframe src="https://www.youtube-nocookie.com/embed/${vid}?rel=0" allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture" allowfullscreen></iframe></div>`
+        :`<div class="ratio"><div class="no-video"><i class="fa-brands fa-youtube" style="font-size:40px;opacity:.4"></i><div style="font-size:14px;margin-top:8px">Video sẽ được thêm sớm</div></div></div>`;
+
+    // ── Sidebar: toàn bộ khóa học ──
+    let side=`<div class="side-list">
+        <div class="side-hd">
+            <div class="side-hd-title"><i class="fa-solid fa-graduation-cap" style="color:var(--blue)"></i> ${esc(course.name)}</div>
+            <div class="side-hd-prog">${pct}% hoàn thành · ${w}/${course.total} bài</div>
+            <div class="bar" style="margin-top:4px"><i style="width:${pct}%"></i></div>
+        </div>`;
+    course.chapters.forEach((ch,ci)=>{
+        const cw=ch.lessons.filter(l=>WATCHED.has(l.key)).length;
+        side+=`<div class="side-chap">
+            <div class="side-chap-name">
+                <span class="side-chap-num">${ci+1}</span>
+                ${esc(ch.name)}
+                <span class="side-chap-cnt">${cw}/${ch.lessons.length}</span>
+            </div>`;
+        ch.lessons.forEach(l=>{
+            const d=WATCHED.has(l.key); const active=l.key===key;
+            side+=`<div class="side-item ${active?'active':''} ${d?'done':''}" onclick="go('#lesson/${encodeURIComponent(l.key)}')">
+                <span class="si-ic"><i class="fa-solid ${d?'fa-circle-check':'fa-circle-play'}"></i></span>
+                <span class="si-name">${esc(l.name)}</span>
+                ${l.baitap&&l.baitap.length?'<i class="fa-solid fa-pen-to-square" style="font-size:10px;color:var(--blue);opacity:.6"></i>':''}
+            </div>`;
+        });
+        side+='</div>';
+    });
+    side+='</div>';
+
+    // ── Quiz luyện tập ──
+    let quizHtml='';
+    if(lesson.baitap && lesson.baitap.length>0){
+        quizHtml=`<div class="section-block" id="quiz-block">
+            <div class="section-block-head">
+                <div class="s-icon s-icon-blue"><i class="fa-solid fa-pen-to-square"></i></div>
+                <div>
+                    <h3>Bài tập luyện tập</h3>
+                    <p>${lesson.baitap.length} câu trắc nghiệm cho bài này</p>
+                </div>
+            </div>
+            <div class="section-block-body">`;
+        lesson.baitap.forEach((q,qi)=>{
+            quizHtml+=`<div class="pq-block" id="pq-${qi}">
+                <div class="pq-text">Câu ${qi+1}: ${q.q}</div>
+                <div class="pq-opts">`;
+            ['A','B','C','D'].forEach(L=>{
+                if(!q[L]&&!q[L.toLowerCase()]) return;
+                const txt=q[L]||q[L.toLowerCase()]||'';
+                quizHtml+=`<label class="pq-opt" id="pq-${qi}-${L}">
+                    <input type="radio" name="pq${qi}" value="${L}">
+                    <span class="pq-letter">${L}.</span>
+                    <span>${esc(txt)}</span>
+                </label>`;
+            });
+            quizHtml+=`</div></div>`;
+        });
+        quizHtml+=`<div class="quiz-actions">
+                <button class="btn-check" onclick="checkPractice('${esc(key)}')">
+                    <i class="fa-solid fa-check-circle"></i> Kiểm tra đáp án
+                </button>
+                <button class="btn-reset" onclick="resetPractice()">
+                    <i class="fa-solid fa-rotate-left"></i> Làm lại
+                </button>
+                <span class="quiz-score" id="quiz-score" style="display:none"></span>
+            </div>
+            </div>
+        </div>`;
+    }
+
+    // ── Video chữa bài ──
+    let solutionHtml='';
+    if(lesson.videogiai){
+        const svid=ytId(lesson.videogiai);
+        if(svid){
+            solutionHtml=`<div class="section-block">
+                <div class="section-block-head">
+                    <div class="s-icon s-icon-green"><i class="fa-solid fa-lightbulb"></i></div>
+                    <div>
+                        <h3>Video chữa bài</h3>
+                        <p>Thầy giải chi tiết từng câu</p>
+                    </div>
+                </div>
+                <div class="section-block-body">
+                    <div class="video-box solution-video">
+                        <div class="ratio"><iframe src="https://www.youtube-nocookie.com/embed/${svid}?rel=0" allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture" allowfullscreen></iframe></div>
+                    </div>
+                </div>
+            </div>`;
+        }
+    }
+
+    // ── Render trang bài học ──
+    app().innerHTML=`
+        <div class="crumb">
+            <a onclick="go('#home')">Khóa học</a><span class="sep">›</span>
+            <a onclick="go('#course/${encodeURIComponent(course.name)}')">${esc(course.name)}</a>
+            <span class="sep">›</span><span class="cur">${esc(lesson.name)}</span>
+        </div>
+        <div class="player-layout">
+            <div class="lesson-main">
+                <div class="video-box">${videoHtml}</div>
+                <div class="lesson-detail">
+                    <h1>${esc(lesson.name)}</h1>
+                    <div class="ld-sub">
+                        <i class="fa-solid fa-folder-open" style="color:var(--blue)"></i> ${esc(chapter.name)}
+                        ${lesson.date?' &nbsp;·&nbsp; <i class="fa-regular fa-calendar"></i> '+esc(lesson.date):''}
+                    </div>
+                    ${lesson.desc?`<div class="ld-desc">${lesson.desc}</div>`:'<div class="ld-desc" style="color:var(--sub)">Thầy sẽ bổ sung mô tả bài học này sớm.</div>'}
+                    <div class="ld-actions">
+                        <button class="btn btn-done ${done?'is-done':''}" id="done-btn" onclick="doDone('${esc(key)}')">
+                            <i class="fa-solid ${done?'fa-circle-check':'fa-check'}"></i>
+                            ${done?'Đã hoàn thành':'Đánh dấu đã học xong'}
+                        </button>
+                        <button class="btn btn-nav" onclick="${prev?`go('#lesson/${encodeURIComponent(prev.key)}')`:''}" ${prev?'':'disabled'}>
+                            <i class="fa-solid fa-arrow-left"></i> Bài trước
+                        </button>
+                        <button class="btn btn-nav" onclick="${next?`go('#lesson/${encodeURIComponent(next.key)}')`:''}" ${next?'':'disabled'}>
+                            Bài tiếp <i class="fa-solid fa-arrow-right"></i>
+                        </button>
+                    </div>
+                </div>
+                ${quizHtml}
+                ${solutionHtml}
+            </div>
+            <div class="lesson-sidebar">${side}</div>
+        </div>`;
+    renderMath(app());
+}
+
+function doDone(key){
+    markWatched(key);
+    const b=$('#done-btn'); if(b){ b.classList.add('is-done'); b.innerHTML='<i class="fa-solid fa-circle-check"></i> Đã hoàn thành'; }
+    document.querySelectorAll('.side-item.active .si-ic i').forEach(i=>i.className='fa-solid fa-circle-check');
+    document.querySelectorAll('.side-item.active').forEach(s=>s.classList.add('done'));
+}
+
+/* ═══════════════════════════════════════════
+   QUIZ LOGIC
+═══════════════════════════════════════════ */
+function checkPractice(key){
+    const info=findLesson(decodeURIComponent(key));
+    if(!info) return;
+    const qs=info.lesson.baitap;
+    let correct=0, answered=0;
+    qs.forEach((q,qi)=>{
+        const sel=document.querySelector(`input[name="pq${qi}"]:checked`);
+        const opts=document.querySelectorAll(`#pq-${qi} .pq-opt`);
+        const ans=(q.ans||q.correct||q.dapan||'').toString().toUpperCase().trim();
+        opts.forEach(opt=>{
+            opt.classList.remove('result-correct','result-wrong');
+            opt.querySelector('.pq-tag')?.remove();
+        });
+        if(sel){
+            answered++;
+            const got=sel.value.toUpperCase();
+            const isRight=got===ans;
+            if(isRight) correct++;
+            const chosenOpt=document.querySelector(`#pq-${qi}-${got}`);
+            if(chosenOpt){
+                chosenOpt.classList.add(isRight?'result-correct':'result-wrong');
+                const tag=document.createElement('span');
+                tag.className='pq-tag '+(isRight?'ok':'wrong');
+                tag.textContent=isRight?'✓ Đúng':'✗ Sai';
+                chosenOpt.appendChild(tag);
+            }
+        }
+        // Luôn hiển thị đáp án đúng
+        if(ans){
+            const correctOpt=document.querySelector(`#pq-${qi}-${ans}`);
+            if(correctOpt && sel && sel.value.toUpperCase()!==ans){
+                correctOpt.classList.add('result-correct');
+                const tag=document.createElement('span');
+                tag.className='pq-tag correct-mark';
+                tag.textContent='← Đáp án đúng';
+                correctOpt.appendChild(tag);
+            }
+        }
+    });
+    if(answered<qs.length){ toast('<i class="fa-solid fa-triangle-exclamation"></i> Hãy trả lời đủ các câu nhé!','err'); return; }
+    const scoreEl=document.getElementById('quiz-score');
+    if(scoreEl){
+        scoreEl.style.display='inline-flex';
+        scoreEl.className='quiz-score'+(correct===qs.length?' great':'');
+        scoreEl.innerHTML=`<i class="fa-solid fa-star"></i> ${correct}/${qs.length} câu đúng`;
+    }
+}
+
+function resetPractice(){
+    document.querySelectorAll('.pq-opt').forEach(o=>{ o.classList.remove('result-correct','result-wrong'); o.querySelector('.pq-tag')?.remove(); });
+    document.querySelectorAll('.pq-opt input[type=radio]').forEach(r=>r.checked=false);
+    const s=document.getElementById('quiz-score'); if(s) s.style.display='none';
+}
+
+/* ═══════════════════════════════════════════
+   THEME
+═══════════════════════════════════════════ */
+function toggleTheme(){ document.body.classList.toggle('dark'); localStorage.setItem('vlxt_theme',document.body.classList.contains('dark')?'dark':'light'); }
+if(localStorage.getItem('vlxt_theme')==='dark') document.body.classList.add('dark');
+
+/* ═══════════════════════════════════════════
+   BOOT
+═══════════════════════════════════════════ */
+async function boot(){
+    renderWho();
+    const rows=await fetchLessons();
+    COURSES=buildCourses(rows);
+    await fetchProgress();
+    route();
+}
+function init(){
+    loadIdentity();
+    if(HS){ $('#gate').style.display='none'; boot(); }
+    else { $('#gate').style.display='flex'; }
+}
+
+/* ═══════════════════════════════════════════
+   DỮ LIỆU MẪU — 4 CHƯƠNG VẬT LÝ 12
+   (Thầy điền link YouTube thật vào cột Video
+    và VideoGiai trong Google Sheets)
+═══════════════════════════════════════════ */
+const Q_C1B1 = [
+    {q:'Nội năng của một vật là tổng:',A:'Động năng chuyển động của vật',B:'Thế năng hấp dẫn của vật',C:'Động năng và thế năng tương tác của các phân tử cấu tạo nên vật',D:'Nhiệt lượng mà vật nhận được',ans:'C'},
+    {q:'Cách nào sau đây làm thay đổi nội năng của vật bằng cách <b>thực hiện công</b>?',A:'Đun nóng vật bằng ngọn lửa',B:'Nhúng vật vào nước nóng',C:'Cọ xát vật vào mặt nhám',D:'Đặt vật lên bếp điện',ans:'C'},
+    {q:'Đơn vị của nhiệt dung riêng là:',A:'J',B:'J/kg',C:'J/(kg·K)',D:'W/m²',ans:'C'},
+    {q:'Nhiệt lượng vật thu vào được tính theo công thức nào?',A:'Q = m/c·Δt',B:'Q = mc·Δt',C:'Q = c·Δt/m',D:'Q = mc/Δt',ans:'B'}
+];
+const Q_C1B2 = [
+    {q:'Nguyên lý I nhiệt động lực học phát biểu:',A:'Nhiệt chỉ truyền từ nơi lạnh sang nơi nóng',B:'Độ biến thiên nội năng bằng tổng nhiệt lượng và công mà hệ nhận',C:'Entropy luôn tăng',D:'Không thể chế tạo động cơ vĩnh cửu',ans:'B'},
+    {q:'Trong quá trình đẳng tích (thể tích không đổi), công do khí thực hiện là:',A:'Dương',B:'Âm',C:'Bằng 0',D:'Bằng nhiệt lượng nhận vào',ans:'C'},
+    {q:'Theo nguyên lý II nhiệt động lực học, nhiệt không thể tự truyền từ:',A:'Vật có nhiệt độ cao hơn sang thấp hơn',B:'Vật có nhiệt độ thấp hơn sang cao hơn',C:'Vật cứng sang vật lỏng',D:'Khí sang lỏng',ans:'B'}
+];
+const Q_C2B1 = [
+    {q:'Định luật Boyle-Mariotte áp dụng cho quá trình nào?',A:'Đẳng nhiệt (T = const)',B:'Đẳng tích (V = const)',C:'Đẳng áp (p = const)',D:'Đoạn nhiệt',ans:'A'},
+    {q:'Trong quá trình đẳng nhiệt, nếu thể tích khí giảm 2 lần thì áp suất:',A:'Giảm 2 lần',B:'Tăng 2 lần',C:'Không đổi',D:'Tăng 4 lần',ans:'B'},
+    {q:'Biểu thức định luật Boyle-Mariotte là:',A:'p/T = const',B:'V/T = const',C:'pV = const',D:'pT = const',ans:'C'},
+    {q:'Đồ thị nào biểu diễn quá trình đẳng nhiệt trên hệ trục (p, V)?',A:'Đường thẳng qua gốc tọa độ',B:'Đường hyperbol',C:'Đường thẳng song song trục V',D:'Đường elip',ans:'B'}
+];
+const Q_C2B2 = [
+    {q:'Phương trình trạng thái khí lý tưởng là:',A:'pV = nRT',B:'p/V = nRT',C:'pVT = nR',D:'pV/T = const',ans:'A'},
+    {q:'Đối với một lượng khí nhất định, đại lượng nào không đổi khi trạng thái thay đổi?',A:'Áp suất',B:'Thể tích',C:'Nhiệt độ',D:'pV/T',ans:'D'},
+    {q:'Ở 0°C tức là bao nhiêu Kelvin?',A:'0 K',B:'100 K',C:'273 K',D:'373 K',ans:'C'}
+];
+const Q_C3B1 = [
+    {q:'Từ trường tồn tại ở đâu?',A:'Chỉ trong nam châm',B:'Chỉ xung quanh dây dẫn mang điện',C:'Xung quanh nam châm và dây dẫn mang điện',D:'Khắp nơi trong không gian',ans:'C'},
+    {q:'Đơn vị của cảm ứng từ B là:',A:'T (Tesla)',B:'A/m',C:'Wb (Weber)',D:'H (Henry)',ans:'A'},
+    {q:'Lực từ tác dụng lên dây dẫn mang điện đặt song song với đường cảm ứng từ có giá trị:',A:'Cực đại',B:'Cực tiểu (bằng 0)',C:'F = BIL',D:'F = BIL/2',ans:'B'}
+];
+const Q_C3B2 = [
+    {q:'Lực Lorentz tác dụng lên hạt điện tích chuyển động trong từ trường có đặc điểm:',A:'Cùng hướng chuyển động',B:'Ngược hướng chuyển động',C:'Vuông góc với vận tốc và cảm ứng từ',D:'Song song với cảm ứng từ',ans:'C'},
+    {q:'Công thức lực Lorentz là:',A:'F = qvB sinα',B:'F = qvB cosα',C:'F = qB/v',D:'F = mv²/r',ans:'A'},
+    {q:'Khi hạt điện tích chuyển động trong từ trường đều với vận tốc vuông góc với B, quỹ đạo là:',A:'Đường thẳng',B:'Đường parabol',C:'Đường tròn',D:'Đường xoắn ốc',ans:'C'}
+];
+const Q_C4B1 = [
+    {q:'Hạt nhân nguyên tử ${}^{A}_{Z}X$ có bao nhiêu proton?',A:'A',B:'Z',C:'A - Z',D:'A + Z',ans:'B'},
+    {q:'Số neutron trong hạt nhân ${}^{238}_{92}U$ là:',A:'92',B:'238',C:'146',D:'330',ans:'C'},
+    {q:'Đồng vị là những nguyên tử của cùng một nguyên tố có:',A:'Cùng số neutron, khác số proton',B:'Cùng số proton, khác số neutron',C:'Cùng số khối A',D:'Cùng khối lượng',ans:'B'}
+];
+const Q_C4B2 = [
+    {q:'Phóng xạ alpha ($\\alpha$) là hiện tượng hạt nhân phát ra:',A:'Electron',B:'Photon',C:'Hạt nhân Helium ${}^{4}_{2}He$',D:'Positron',ans:'C'},
+    {q:'Chu kì bán rã T là thời gian để:',A:'Tất cả hạt nhân phân rã',B:'Một nửa số hạt nhân phân rã',C:'Hoạt độ phóng xạ về 0',D:'Khối lượng chất tăng gấp đôi',ans:'B'},
+    {q:'Sau 3 chu kì bán rã, phần trăm số hạt nhân còn lại là:',A:'25%',B:'12.5%',C:'50%',D:'6.25%',ans:'B'}
+];
+const Q_C4B3 = [
+    {q:'Năng lượng liên kết hạt nhân là:',A:'Năng lượng để phá vỡ hạt nhân thành các nucleon riêng lẻ',B:'Năng lượng do hạt nhân phát ra',C:'Động năng của các nucleon',D:'Năng lượng hạt nhân hấp thụ từ môi trường',ans:'A'},
+    {q:'Phản ứng hạt nhân nào giải phóng năng lượng lớn nhất tính trên một đơn vị khối lượng?',A:'Phân hạch hạt nhân nặng',B:'Phóng xạ beta',C:'Nhiệt hạch (tổng hợp hạt nhân nhẹ)',D:'Phóng xạ alpha',ans:'C'},
+    {q:'Năng lượng liên kết riêng là:',A:'Năng lượng liên kết / số khối A',B:'Năng lượng liên kết × số khối',C:'Năng lượng liên kết / số proton',D:'Tổng khối lượng các nucleon',ans:'A'}
+];
+
+const DEMO_ROWS = [
+    // ═══ VẬT LÝ 12 ═══
+    // ── Chương 1: Vật lý nhiệt ──
+    {KhoaHoc:'Vật Lý 12', MoTaKhoa:'4 chương trọng tâm: Nhiệt động lực học · Khí lý tưởng · Từ trường · Hạt nhân. Chuẩn bị kỹ cho kỳ thi THPT.', AnhKhoa:'⚛️',
+     Chuong:'Chương 1 — Vật lý nhiệt', TenBai:'Bài 1: Nhiệt năng và nội năng',
+     Video:'', VideoGiai:'', BaiTap:JSON.stringify(Q_C1B1), MoTaBai:'Nội năng là tổng động năng và thế năng tương tác của các phân tử. Công thức nhiệt lượng: $Q = mc\\Delta t$', NgayDang:'01/05/2026'},
+    {KhoaHoc:'Vật Lý 12', Chuong:'Chương 1 — Vật lý nhiệt', TenBai:'Bài 2: Các nguyên lý nhiệt động lực học',
+     Video:'', VideoGiai:'', BaiTap:JSON.stringify(Q_C1B2), MoTaBai:'Nguyên lý I: $\\Delta U = Q + A$. Nguyên lý II: nhiệt không tự truyền từ lạnh sang nóng.', NgayDang:'03/05/2026'},
+    {KhoaHoc:'Vật Lý 12', Chuong:'Chương 1 — Vật lý nhiệt', TenBai:'Bài 3: Bài tập tổng hợp Nhiệt động lực học',
+     Video:'', VideoGiai:'', BaiTap:'', MoTaBai:'Tổng hợp các dạng bài tập vận dụng nguyên lý I và II. Rèn kỹ năng tính toán.', NgayDang:'05/05/2026'},
+
+    // ── Chương 2: Khí lý tưởng ──
+    {KhoaHoc:'Vật Lý 12', Chuong:'Chương 2 — Khí lý tưởng', TenBai:'Bài 1: Định luật Boyle-Mariotte (đẳng nhiệt)',
+     Video:'', VideoGiai:'', BaiTap:JSON.stringify(Q_C2B1), MoTaBai:'Quá trình đẳng nhiệt: $p_1V_1 = p_2V_2$. Đồ thị (p, V) là đường hyperbol.', NgayDang:'08/05/2026'},
+    {KhoaHoc:'Vật Lý 12', Chuong:'Chương 2 — Khí lý tưởng', TenBai:'Bài 2: Định luật Charles & Gay-Lussac',
+     Video:'', VideoGiai:'', BaiTap:'', MoTaBai:'Đẳng tích: $p/T = \\text{const}$. Đẳng áp: $V/T = \\text{const}$.', NgayDang:'10/05/2026'},
+    {KhoaHoc:'Vật Lý 12', Chuong:'Chương 2 — Khí lý tưởng', TenBai:'Bài 3: Phương trình trạng thái khí lý tưởng',
+     Video:'', VideoGiai:'', BaiTap:JSON.stringify(Q_C2B2), MoTaBai:'Phương trình tổng quát: $\\dfrac{p_1V_1}{T_1} = \\dfrac{p_2V_2}{T_2}$. Phương trình Mendeleev-Clapeyron: $pV = nRT$.', NgayDang:'12/05/2026'},
+    {KhoaHoc:'Vật Lý 12', Chuong:'Chương 2 — Khí lý tưởng', TenBai:'Bài 4: Bài tập đồ thị và ứng dụng',
+     Video:'', VideoGiai:'', BaiTap:'', MoTaBai:'Nhận dạng quá trình qua đồ thị. Giải bài toán khí thực tiễn: bình chứa, lốp xe, bóng bay...', NgayDang:'14/05/2026'},
+
+    // ── Chương 3: Từ trường ──
+    {KhoaHoc:'Vật Lý 12', Chuong:'Chương 3 — Từ trường', TenBai:'Bài 1: Từ trường và cảm ứng từ',
+     Video:'', VideoGiai:'', BaiTap:JSON.stringify(Q_C3B1), MoTaBai:'Từ trường tồn tại xung quanh nam châm và dây dẫn mang điện. Quy tắc bàn tay phải.', NgayDang:'16/05/2026'},
+    {KhoaHoc:'Vật Lý 12', Chuong:'Chương 3 — Từ trường', TenBai:'Bài 2: Lực từ và lực Lorentz',
+     Video:'', VideoGiai:'', BaiTap:JSON.stringify(Q_C3B2), MoTaBai:'Lực từ: $F = BIL\\sin\\alpha$. Lực Lorentz: $F = qvB\\sin\\alpha$.', NgayDang:'18/05/2026'},
+    {KhoaHoc:'Vật Lý 12', Chuong:'Chương 3 — Từ trường', TenBai:'Bài 3: Cảm ứng điện từ — Định luật Faraday',
+     Video:'', VideoGiai:'', BaiTap:'', MoTaBai:'Từ thông: $\\Phi = BS\\cos\\alpha$. Suất điện động cảm ứng: $e = -\\dfrac{\\Delta\\Phi}{\\Delta t}$.', NgayDang:'20/05/2026'},
+
+    // ── Chương 4: Hạt nhân nguyên tử ──
+    {KhoaHoc:'Vật Lý 12', Chuong:'Chương 4 — Hạt nhân nguyên tử', TenBai:'Bài 1: Cấu tạo hạt nhân — Đồng vị',
+     Video:'', VideoGiai:'', BaiTap:JSON.stringify(Q_C4B1), MoTaBai:'Hạt nhân ${}^A_ZX$ có Z proton, (A−Z) neutron. Đồng vị có cùng Z, khác A.', NgayDang:'22/05/2026'},
+    {KhoaHoc:'Vật Lý 12', Chuong:'Chương 4 — Hạt nhân nguyên tử', TenBai:'Bài 2: Phóng xạ — Chu kì bán rã',
+     Video:'', VideoGiai:'', BaiTap:JSON.stringify(Q_C4B2), MoTaBai:'Phóng xạ $\\alpha,\\,\\beta^-,\\,\\beta^+,\\,\\gamma$. Định luật phân rã: $N = N_0 \\cdot 2^{-t/T}$.', NgayDang:'24/05/2026'},
+    {KhoaHoc:'Vật Lý 12', Chuong:'Chương 4 — Hạt nhân nguyên tử', TenBai:'Bài 3: Năng lượng liên kết — Phản ứng hạt nhân',
+     Video:'', VideoGiai:'', BaiTap:JSON.stringify(Q_C4B3), MoTaBai:'Độ hụt khối $\\Delta m$. Năng lượng liên kết: $E_{lk} = \\Delta m \\cdot c^2$.', NgayDang:'26/05/2026'},
+    {KhoaHoc:'Vật Lý 12', Chuong:'Chương 4 — Hạt nhân nguyên tử', TenBai:'Bài 4: Phân hạch · Nhiệt hạch · Ứng dụng',
+     Video:'', VideoGiai:'', BaiTap:'', MoTaBai:'Lò phản ứng hạt nhân. Bom nguyên tử và bom nhiệt hạch. Năng lượng tái tạo từ hạt nhân.', NgayDang:'28/05/2026'},
+
+    // ═══ VẬT LÝ 11 (placeholder) ═══
+    {KhoaHoc:'Vật Lý 11', MoTaKhoa:'Điện học & Từ học lớp 11 — Đang xây dựng nội dung.', AnhKhoa:'🔌',
+     Chuong:'Chương 1 — Điện trường', TenBai:'Bài 1: Điện tích — Định luật Coulomb',
+     Video:'', VideoGiai:'', BaiTap:'', MoTaBai:'$F = k\\dfrac{|q_1 q_2|}{r^2}$. Hằng số điện: $k = 9\\times10^9$ N·m²/C².', NgayDang:'01/04/2026'},
+
+    // ═══ VẬT LÝ 10 (placeholder) ═══
+    {KhoaHoc:'Vật Lý 10', MoTaKhoa:'Cơ học & Nhiệt học lớp 10 — Đang xây dựng nội dung.', AnhKhoa:'🚀',
+     Chuong:'Chương 1 — Động học', TenBai:'Bài 1: Chuyển động thẳng đều',
+     Video:'', VideoGiai:'', BaiTap:'', MoTaBai:'Vận tốc trung bình: $v = s/t$. Phương trình: $x = x_0 + vt$.', NgayDang:'01/03/2026'},
+];
+
+init();
+</script>
+</body>
+</html>

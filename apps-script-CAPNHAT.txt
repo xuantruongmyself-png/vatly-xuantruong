@@ -1,0 +1,232 @@
+// ════════════════════════════════════════════════════════════════
+// APPS SCRIPT TOÀN DIỆN — Vật Lý Xuân Trường
+// Dán toàn bộ đoạn này vào Google Apps Script, rồi Deploy lại.
+// ════════════════════════════════════════════════════════════════
+// CẤU TRÚC GOOGLE SHEETS CẦN CÓ:
+//   Tab "BaiHoc"    : KhoaHoc | Chuong | TenBai | Video | VideoGiai | MoTaBai | NgayDang | BaiTap
+//   Tab "NganHangDe": id | type | question | optA | optB | optC | optD | correct
+//   Tab "BangVang"  : name | studentClass | phone | score | timestamp
+//   Tab "TienDo"    : sdt | lesson | khoa | ten | lop | ngay
+// ════════════════════════════════════════════════════════════════
+
+function doGet(e) {
+  const type = (e.parameter.type || '').toLowerCase();
+  const hs   = e.parameter.hs || '';
+  try {
+    if (type === 'baihoc')  return getBaiHoc();
+    if (type === 'diemthi') return getDiemThi();
+    if (type === 'tiendo')  return getTienDo(hs);
+    return getExamQuestions(); // default: lấy đề thi
+  } catch(err) {
+    return jsonOut({ error: err.message });
+  }
+}
+
+function doPost(e) {
+  try {
+    const data = JSON.parse(e.postData.contents);
+    const action = (data.action || '').toLowerCase();
+    if (action === 'savebaihoc')    return saveBaiHoc(data);
+    if (action === 'deletebaihoc')  return deleteBaiHoc(data);
+    if (action === 'savequestions') return saveQuestions(data);
+    if (action === 'saveprogress')  return saveProgress(data);
+    return saveScore(data); // backward compat: lưu điểm thi
+  } catch(err) {
+    return jsonOut({ error: err.message });
+  }
+}
+
+// ── Tiện ích ──────────────────────────────────────────────────
+
+function getOrCreate(name, headers) {
+  const ss = SpreadsheetApp.getActiveSpreadsheet();
+  let sheet = ss.getSheetByName(name);
+  if (!sheet) {
+    sheet = ss.insertSheet(name);
+    if (headers && headers.length) sheet.appendRow(headers);
+  }
+  return sheet;
+}
+
+function sheetToJson(sheet) {
+  const data = sheet.getDataRange().getValues();
+  if (data.length < 2) return [];
+  const headers = data[0];
+  return data.slice(1).map(row => {
+    const obj = {};
+    headers.forEach((h, i) => { if (h) obj[h] = row[i] !== undefined ? row[i] : ''; });
+    return obj;
+  });
+}
+
+function jsonOut(obj) {
+  return ContentService
+    .createTextOutput(JSON.stringify(obj))
+    .setMimeType(ContentService.MimeType.JSON);
+}
+
+// ── GET: Bài học ──────────────────────────────────────────────
+
+function getBaiHoc() {
+  const sheet = getOrCreate('BaiHoc', ['KhoaHoc','Chuong','TenBai','Video','VideoGiai','MoTaBai','NgayDang','BaiTap']);
+  return jsonOut(sheetToJson(sheet));
+}
+
+// ── GET: Đề thi ───────────────────────────────────────────────
+
+function getExamQuestions() {
+  const sheet = getOrCreate('NganHangDe', ['id','type','question','optA','optB','optC','optD','correct']);
+  const data = sheet.getDataRange().getValues();
+  if (data.length < 2) return jsonOut([]);
+  const rows = data.slice(1).map(r => ({
+    id: r[0], type: r[1] || 'mc',
+    question: r[2],
+    options: { A: r[3], B: r[4], C: r[5], D: r[6] },
+    correct: r[7]
+  })).filter(r => r.question);
+  return jsonOut(rows);
+}
+
+// ── GET: Điểm thi ─────────────────────────────────────────────
+
+function getDiemThi() {
+  const ss = SpreadsheetApp.getActiveSpreadsheet();
+  // Thử BangVang trước, sau đó DiemThi
+  const sheet = ss.getSheetByName('BangVang') || ss.getSheetByName('DiemThi');
+  if (!sheet) return jsonOut([]);
+  return jsonOut(sheetToJson(sheet));
+}
+
+// ── GET: Tiến độ học sinh ─────────────────────────────────────
+
+function getTienDo(sdt) {
+  if (!sdt) return jsonOut([]);
+  const sheet = getOrCreate('TienDo', ['sdt','lesson','khoa','ten','lop','ngay']);
+  const data = sheet.getDataRange().getValues();
+  if (data.length < 2) return jsonOut([]);
+  const rows = data.slice(1)
+    .filter(r => r[0] && r[0].toString() === sdt.toString())
+    .map(r => r[1]); // trả về mảng lesson key
+  return jsonOut(rows);
+}
+
+// ── POST: Lưu / Cập nhật bài học ─────────────────────────────
+
+function saveBaiHoc(data) {
+  const sheet = getOrCreate('BaiHoc', ['KhoaHoc','Chuong','TenBai','Video','VideoGiai','MoTaBai','NgayDang','BaiTap']);
+  const allData = sheet.getDataRange().getValues();
+
+  // Tìm hàng cần cập nhật (theo originalKey hoặc KhoaHoc+Chuong+TenBai)
+  const searchKey = data.originalKey || `${data.KhoaHoc}|||${data.Chuong}|||${data.TenBai}`;
+  const parts = searchKey.split('|||');
+  let targetRow = -1;
+
+  for (let i = 1; i < allData.length; i++) {
+    const rK = allData[i][0], rC = allData[i][1], rT = allData[i][2];
+    if (rK === parts[0] && rC === parts[1] && rT === parts[2]) {
+      targetRow = i + 1; // 1-indexed
+      break;
+    }
+  }
+
+  const rowData = [
+    data.KhoaHoc  || '',
+    data.Chuong   || '',
+    data.TenBai   || '',
+    data.Video    || '',
+    data.VideoGiai|| '',
+    data.MoTaBai  || '',
+    data.NgayDang || new Date().toLocaleDateString('vi-VN'),
+    data.BaiTap   || ''
+  ];
+
+  if (targetRow > 0) {
+    sheet.getRange(targetRow, 1, 1, rowData.length).setValues([rowData]);
+  } else {
+    sheet.appendRow(rowData);
+  }
+
+  return jsonOut({ result: 'success' });
+}
+
+// ── POST: Xóa bài học ─────────────────────────────────────────
+
+function deleteBaiHoc(data) {
+  const sheet = getOrCreate('BaiHoc', ['KhoaHoc','Chuong','TenBai','Video','VideoGiai','MoTaBai','NgayDang','BaiTap']);
+  const allData = sheet.getDataRange().getValues();
+
+  for (let i = 1; i < allData.length; i++) {
+    if (allData[i][0] === data.KhoaHoc &&
+        allData[i][1] === data.Chuong  &&
+        allData[i][2] === data.TenBai) {
+      sheet.deleteRow(i + 1);
+      break;
+    }
+  }
+  return jsonOut({ result: 'success' });
+}
+
+// ── POST: Xuất bản đề thi ─────────────────────────────────────
+
+function saveQuestions(data) {
+  const sheet = getOrCreate('NganHangDe', ['id','type','question','optA','optB','optC','optD','correct']);
+  // Xóa dữ liệu cũ (giữ header)
+  const lastRow = sheet.getLastRow();
+  if (lastRow > 1) sheet.deleteRows(2, lastRow - 1);
+
+  const qs = data.questions || [];
+  const rows = qs.map(q => [
+    q.id, q.type || 'mc', q.question,
+    q.options.A, q.options.B, q.options.C, q.options.D,
+    q.correct
+  ]);
+  if (rows.length) {
+    sheet.getRange(2, 1, rows.length, 8).setValues(rows);
+  }
+  return jsonOut({ result: 'success', count: rows.length });
+}
+
+// ── POST: Lưu tiến độ học ────────────────────────────────────
+
+function saveProgress(data) {
+  const sheet = getOrCreate('TienDo', ['sdt','lesson','khoa','ten','lop','ngay']);
+  const allData = sheet.getDataRange().getValues();
+
+  // Tránh duplicate: nếu đã có cặp (sdt, lesson) thì bỏ qua
+  for (let i = 1; i < allData.length; i++) {
+    if (allData[i][0] == data.hs && allData[i][1] == data.lesson) {
+      return jsonOut({ result: 'exists' });
+    }
+  }
+  sheet.appendRow([data.hs, data.lesson, data.khoa||'', data.ten||'', data.lop||'', data.ngay||'']);
+  return jsonOut({ result: 'success' });
+}
+
+// ── POST: Lưu điểm thi (backward compat) ─────────────────────
+
+function saveScore(data) {
+  const sheet = getOrCreate('BangVang', ['name','studentClass','phone','score','timestamp']);
+  sheet.appendRow([
+    data.name || data.ten || '',
+    data.studentClass || data.lop || '',
+    data.phone || data.sdt || '',
+    data.score || data.diem || '',
+    new Date().toLocaleString('vi-VN')
+  ]);
+  return jsonOut({ result: 'success' });
+}
+
+// ════════════════════════════════════════════════════════════════
+// HƯỚNG DẪN DEPLOY LẦN ĐẦU (chỉ làm 1 lần duy nhất):
+//  1. Mở Google Sheets → Extensions → Apps Script
+//  2. Xóa code cũ, dán code này vào → Lưu
+//  3. Nhấn Deploy → New deployment → Web app
+//     - Execute as: Me  |  Who has access: Anyone
+//  4. Copy URL → dán vào DB_URL trong tất cả file .html
+//
+// HƯỚNG DẪN CẬP NHẬT CODE (những lần sau — URL KHÔNG ĐỔI):
+//  1. Sửa code → Lưu (Ctrl+S)
+//  2. Nhấn Triển khai → Quản lý các tùy chọn triển khai
+//  3. Click bút chì ✏️ → Đổi "Phiên bản" → "Phiên bản mới"
+//  4. Nhấn Triển khai → Xong ✅ (không cần sửa file .html)
+// ════════════════════════════════════════════════════════════════

@@ -313,7 +313,7 @@ function renderWho(){ const w=$('#who'); if(w) w.innerHTML=HS?`<i class="fa-soli
 /* ═══════════════════════════════════════════
    TẢI DỮ LIỆU
 ═══════════════════════════════════════════ */
-const _LC_KEY='vlxt_lessons_cache', _LC_TTL=5*60*1000;
+const _LC_KEY='vlxt_lessons_cache', _LC_TTL=30*1000; // 30 giây — cập nhật nhanh sau khi admin lưu
 function _lcSave(rows){ try{ localStorage.setItem(_LC_KEY,JSON.stringify({ts:Date.now(),rows})); }catch(e){} }
 function _lcLoad(){ try{ const c=JSON.parse(localStorage.getItem(_LC_KEY)||'null'); if(c&&Date.now()-c.ts<_LC_TTL) return c.rows; }catch(e){} return null; }
 function _lcClear(){ try{ localStorage.removeItem(_LC_KEY); }catch(e){} }

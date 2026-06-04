@@ -103,21 +103,24 @@ body{padding-top:52px}
 
 /* ══ SURVIVAL BOARD ══ */
 .survival-board{width:100%;max-width:580px;padding:10px 18px 0;
-  display:flex;align-items:center;gap:12px}
+  display:flex;align-items:center;gap:12px;
+  background-image:url("data:image/svg+xml;utf8,<svg xmlns='http://www.w3.org/2000/svg' width='600' height='60' viewBox='0 0 600 60'><path d='M0 0 L600 0 L580 50 L500 50 L490 60 L110 60 L100 50 L20 50 Z' fill='rgba(15,23,42,0.85)' stroke='%23fdbb2d' stroke-width='1.5'/><line x1='120' y1='55' x2='480' y2='55' stroke='%23fdbb2d' stroke-width='2' stroke-dasharray='5,5'/></svg>");
+  background-size:100% 100%;border:none!important;border-radius:0}
 
 /* Avatar + Rank */
 .rank-slot{display:flex;flex-direction:column;align-items:center;gap:3px;flex-shrink:0}
 .rank-avatar{width:44px;height:44px;border-radius:50%;border:2px solid #30363d;
   display:flex;align-items:center;justify-content:center;font-size:1.4rem;
-  background:#161b22;transition:border-color .3s}
+  background:#161b22;transition:border-color .3s,box-shadow .3s;
+  text-shadow:0 0 5px #fff}
 .rank-name{font-size:.65rem;font-weight:800;text-transform:uppercase;letter-spacing:.05em;color:#8b949e;transition:color .3s}
 /* Rank colors */
-.rank-iron .rank-avatar{border-color:#6b7280}      .rank-iron .rank-name{color:#6b7280}
-.rank-bronze .rank-avatar{border-color:#cd7f32}    .rank-bronze .rank-name{color:#cd7f32}
-.rank-silver .rank-avatar{border-color:#94a3b8}    .rank-silver .rank-name{color:#94a3b8}
-.rank-gold .rank-avatar{border-color:#fbbf24}      .rank-gold .rank-name{color:#fbbf24}
-.rank-platinum .rank-avatar{border-color:#67e8f9}  .rank-platinum .rank-name{color:#67e8f9}
-.rank-diamond .rank-avatar{border-color:#a78bfa}   .rank-diamond .rank-name{color:#a78bfa}
+.rank-iron .rank-avatar{color:#94a3b8;background-color:#334155;border-color:#64748b!important;box-shadow:0 0 10px #64748b}      .rank-iron .rank-name{color:#94a3b8}
+.rank-bronze .rank-avatar{color:#b45309;background-color:#78350f;border-color:#d97706!important;box-shadow:0 0 10px #d97706}    .rank-bronze .rank-name{color:#d97706}
+.rank-silver .rank-avatar{color:#cbd5e1;background-color:#475569;border-color:#94a3b8!important;box-shadow:0 0 10px #94a3b8}    .rank-silver .rank-name{color:#cbd5e1}
+.rank-gold .rank-avatar{color:#facc15;background-color:#713f12;border-color:#eab308!important;box-shadow:0 0 12px #eab308}      .rank-gold .rank-name{color:#facc15}
+.rank-platinum .rank-avatar{color:#22d3ee;background-color:#164e63;border-color:#06b6d4!important;box-shadow:0 0 14px #06b6d4}  .rank-platinum .rank-name{color:#22d3ee}
+.rank-diamond .rank-avatar{color:#c084fc;background-color:#581c87;border-color:#a855f7!important;box-shadow:0 0 16px #a855f7}   .rank-diamond .rank-name{color:#c084fc}
 
 /* HP Bar */
 .hp-wrap{flex:1;display:flex;flex-direction:column;gap:4px}
@@ -176,7 +179,7 @@ body{padding-top:52px}
 
 /* ══ GAME CARD ══ */
 .game-wrap{width:100%;max-width:580px;padding:10px 18px 24px;flex:1}
-.game-card{background:#161b22;border:1px solid #30363d;border-radius:20px;padding:1.4rem}
+.game-card{background-image:url("data:image/svg+xml;utf8,<svg xmlns='http://www.w3.org/2000/svg' width='800' height='250' viewBox='0 0 800 250'><rect x='5' y='5' width='790' height='240' rx='8' fill='rgba(13,22,33,0.5)' stroke='%2300f0ff' stroke-width='1.5' opacity='0.85'/><path d='M5 25 L25 5 M795 25 L775 5 M5 225 L25 245 M795 225 L775 245' stroke='%2300f0ff' stroke-width='2'/><circle cx='15' cy='15' r='2' fill='%2300f0ff'/><circle cx='785' cy='15' r='2' fill='%2300f0ff'/><circle cx='15' cy='235' r='2' fill='%2300f0ff'/><circle cx='785' cy='235' r='2' fill='%2300f0ff'/><path d='M360 5 L440 5 L430 15 L370 15 Z' fill='%2300f0ff' opacity='0.4'/></svg>");background-size:100% 100%;background-color:transparent!important;border:none!important;border-radius:20px;padding:1.4rem}
 
 /* Difficulty badge */
 .diff-badge{display:inline-flex;align-items:center;gap:5px;padding:3px 10px;border-radius:6px;
@@ -193,22 +196,24 @@ body{padding-top:52px}
 /* Answers */
 .ans-grid{display:grid;grid-template-columns:1fr 1fr;gap:9px;margin-bottom:.9rem}
 .ans-btn{display:flex;align-items:center;gap:9px;padding:11px 12px;
-  border-radius:12px;border:1.5px solid #30363d;background:#0d1117;
-  cursor:pointer;font-family:inherit;text-align:left;
-  transition:all .12s;min-height:56px}
-.ans-btn:hover:not(:disabled){border-color:#6366f1;background:#161b22;transform:translateY(-1px)}
+  border-radius:12px;cursor:pointer;font-family:inherit;text-align:left;
+  transition:all .12s;min-height:56px;
+  background-image:url("data:image/svg+xml;utf8,<svg xmlns='http://www.w3.org/2000/svg' width='350' height='70' viewBox='0 0 350 70'><path d='M5 15 L15 5 L335 5 L345 15 L345 55 L335 65 L15 65 L5 55 Z' fill='rgba(22,27,34,0.6)' stroke='%238b949e' stroke-width='1.5'/><rect x='10' y='30' width='3' height='10' fill='%238b949e'/></svg>");
+  background-size:100% 100%;background-color:transparent!important;border:none!important}
+.ans-btn:hover:not(:disabled){transform:translateY(-1px);
+  background-image:url("data:image/svg+xml;utf8,<svg xmlns='http://www.w3.org/2000/svg' width='350' height='70' viewBox='0 0 350 70'><path d='M5 15 L15 5 L335 5 L345 15 L345 55 L335 65 L15 65 L5 55 Z' fill='rgba(99,102,241,0.2)' stroke='%236366f1' stroke-width='2'/><rect x='10' y='30' width='3' height='10' fill='%236366f1'/></svg>")!important}
 .ans-btn:active:not(:disabled){transform:scale(.98)}
 .ans-letter{min-width:27px;height:27px;border-radius:7px;background:#6366f1;color:#fff;
   display:flex;align-items:center;justify-content:center;
   font-size:.75rem;font-weight:800;flex-shrink:0;transition:background .15s}
 .ans-text{font-size:.86rem;font-weight:500;color:#8b949e;line-height:1.4}
-.ans-btn.correct{border-color:#22c55e;background:#0d1117}
+.ans-btn.correct{background-image:url("data:image/svg+xml;utf8,<svg xmlns='http://www.w3.org/2000/svg' width='350' height='70' viewBox='0 0 350 70'><path d='M5 15 L15 5 L335 5 L345 15 L345 55 L335 65 L15 65 L5 55 Z' fill='rgba(34,197,94,0.2)' stroke='%2322c55e' stroke-width='2'/><rect x='10' y='30' width='3' height='10' fill='%2322c55e'/></svg>")!important;border:none!important}
 .ans-btn.correct .ans-letter{background:#22c55e}
 .ans-btn.correct .ans-text{color:#4ade80;font-weight:600}
-.ans-btn.wrong{border-color:#ef4444;background:#1a0d0d}
+.ans-btn.wrong{background-image:url("data:image/svg+xml;utf8,<svg xmlns='http://www.w3.org/2000/svg' width='350' height='70' viewBox='0 0 350 70'><path d='M5 15 L15 5 L335 5 L345 15 L345 55 L335 65 L15 65 L5 55 Z' fill='rgba(239,68,68,0.2)' stroke='%23ef4444' stroke-width='2'/><rect x='10' y='30' width='3' height='10' fill='%23ef4444'/></svg>")!important;border:none!important}
 .ans-btn.wrong .ans-letter{background:#ef4444}
 .ans-btn.wrong .ans-text{color:#f87171}
-.ans-btn.reveal{border-color:#22c55e;background:#0d1117}
+.ans-btn.reveal{background-image:url("data:image/svg+xml;utf8,<svg xmlns='http://www.w3.org/2000/svg' width='350' height='70' viewBox='0 0 350 70'><path d='M5 15 L15 5 L335 5 L345 15 L345 55 L335 65 L15 65 L5 55 Z' fill='rgba(34,197,94,0.15)' stroke='%2322c55e' stroke-width='1.5'/><rect x='10' y='30' width='3' height='10' fill='%2322c55e'/></svg>")!important;border:none!important}
 .ans-btn.reveal .ans-letter{background:#22c55e}
 .ans-btn.reveal .ans-text{color:#4ade80}
 .ans-btn:disabled{cursor:default}
@@ -355,8 +360,9 @@ body{padding-top:52px}
 /* ══ ROUTE NAVIGATION OVERLAY ══ */
 .route-navigation{position:absolute;inset:0;background:rgba(10,15,30,.72);z-index:110;
   display:flex;justify-content:center;align-items:center;backdrop-filter:blur(4px)}
-.route-box{background:#161b22;border:2px solid #30363d;padding:28px 32px;border-radius:16px;
-  text-align:center;box-shadow:0 10px 40px rgba(0,0,0,.8)}
+.route-box{padding:28px 32px;border-radius:16px;text-align:center;
+  background-image:url("data:image/svg+xml;utf8,<svg xmlns='http://www.w3.org/2000/svg' width='500' height='220' viewBox='0 0 500 220'><rect x='5' y='5' width='490' height='210' rx='12' fill='rgba(22,27,34,0.95)' stroke='%23ea580c' stroke-width='2'/><path d='M5 5 L45 5 L5 45 Z M495 5 L455 5 L495 45 Z' fill='%23ea580c'/><line x1='10' y1='25' x2='490' y2='25' stroke='%23ea580c' stroke-width='1'/></svg>");
+  background-size:100% 100%;border:none!important;box-shadow:0 10px 40px rgba(0,0,0,.8)}
 .route-box h3{font-size:1.05rem;font-weight:800;color:#fdbb2d;margin-bottom:20px;letter-spacing:1px}
 .route-btns-row{display:flex;gap:15px;justify-content:center;flex-wrap:wrap}
 .btn-route{padding:14px 22px;border:none;border-radius:10px;color:#fff;font-weight:800;

@@ -620,14 +620,23 @@ const LP_PER_RANK = 100;
 /* ═══════════════════════════════════════════
    YOUTUBE PLAYER
 ═══════════════════════════════════════════ */
-let ytPlayer=null, ytReady=false, ytEndedCb=null;
+let ytPlayer=null, ytReady=false, ytEndedCb=null, ytPendingFile=null, ytPendingCb=null;
 
 function onYouTubeIframeAPIReady(){
   ytPlayer=new YT.Player('pov-player',{
     videoId:VIDEOS['intro.mp4'],
-    playerVars:{autoplay:0,mute:1,controls:0,rel:0,modestbranding:1,playsinline:1,enablejsapi:1,loop:0},
+    playerVars:{autoplay:1,mute:1,controls:0,rel:0,modestbranding:1,playsinline:1,enablejsapi:1,loop:0},
     events:{
-      onReady:function(e){ytReady=true;e.target.mute();},
+      onReady:function(e){
+        ytReady=true;
+        e.target.mute();
+        // Nếu có video đang chờ, play luôn
+        if(ytPendingFile){
+          const f=ytPendingFile, cb=ytPendingCb;
+          ytPendingFile=null; ytPendingCb=null;
+          ytPlay(f,cb);
+        }
+      },
       onStateChange:function(e){
         if(e.data===YT.PlayerState.ENDED&&ytEndedCb){
           const cb=ytEndedCb;ytEndedCb=null;cb();
@@ -638,7 +647,11 @@ function onYouTubeIframeAPIReady(){
 }
 function ytPlay(file,onEnded){
   ytEndedCb=onEnded||null;
-  if(!ytReady)return;
+  if(!ytReady){
+    // Queue lại để chạy sau khi player sẵn sàng
+    ytPendingFile=file; ytPendingCb=onEnded;
+    return;
+  }
   ytPlayer.loadVideoById(VIDEOS[file]);
   ytPlayer.mute();
 }
@@ -950,9 +963,14 @@ function initGame(){
 
   // Khởi động video nhảy dù nền
   ytGray(false);
-  ytPlay('intro.mp4', function(){
-    document.getElementById('route-overlay').style.display='flex';
-  });
+  const showRoute=function(){ document.getElementById('route-overlay').style.display='flex'; };
+  ytPlay('intro.mp4', showRoute);
+  // Fallback: nếu video không autoplay (browser policy), mở route sau 5s
+  setTimeout(function(){
+    if(document.getElementById('route-overlay').style.display==='none' && !isDead){
+      showRoute();
+    }
+  }, 5000);
 
   // Intro overlay parachute animation (CSS)
   const ov=document.getElementById('intro-overlay');

@@ -645,6 +645,7 @@ function onYouTubeIframeAPIReady(){
     }
   });
 }
+let ytUnmuted=false;
 function ytPlay(file,onEnded){
   ytEndedCb=onEnded||null;
   if(!ytReady){
@@ -653,7 +654,8 @@ function ytPlay(file,onEnded){
     return;
   }
   ytPlayer.loadVideoById(VIDEOS[file]);
-  ytPlayer.mute();
+  // Chỉ mute lúc đầu (intro). Sau khi user đã click route thì giữ nguyên âm thanh
+  if(!ytUnmuted) ytPlayer.mute();
 }
 function ytPause(){if(ytReady)ytPlayer.pauseVideo();}
 function ytGray(on){
@@ -673,7 +675,11 @@ let audioCtx=null;
 /* ═══════════════════════════════════════════
    AUDIO
 ═══════════════════════════════════════════ */
-function au(){if(!audioCtx)audioCtx=new(window.AudioContext||window.webkitAudioContext)();return audioCtx;}
+function au(){
+  if(!audioCtx){audioCtx=new(window.AudioContext||window.webkitAudioContext)();}
+  if(audioCtx.state==='suspended')audioCtx.resume();
+  return audioCtx;
+}
 function snd(type){
   try{
     const c=au();
@@ -981,6 +987,9 @@ function initGame(){
 function chooseRoute(videoFile){
   // Ẩn overlay chọn đường
   document.getElementById('route-overlay').style.display='none';
+
+  // Unmute video sau khi user đã click (browser cho phép audio)
+  if(ytReady && !ytUnmuted){ ytPlayer.unMute(); ytPlayer.setVolume(80); ytUnmuted=true; }
 
   // Sau 3.5s đóng băng hình súng và hiện câu hỏi
   ytPlay(videoFile, null);

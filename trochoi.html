@@ -1378,4 +1378,62 @@ function endGame(){
   // Count-up
   const el=document.getElementById('res-score');let v=0;
   const step=Math.max(1,Math.ceil(finalLP/40));
-  const t=setInterval(()=>{v=Math.min(v+step,finalLP);el.textC
+  const t=setInterval(()=>{v=Math.min(v+step,finalLP);el.textContent=v;if(v>=finalLP)clearInterval(t);},28);
+  document.getElementById('st-correct').textContent=`${okCnt}/${qs.length}`;
+  document.getElementById('st-hp').textContent=playerHP;
+  document.getElementById('st-gold').textContent=playerGold;
+  document.getElementById('res-formula').textContent=`${playerHP} × 10 + ${playerGold} = ${finalLP}`;
+  const rank=getRank(finalLP);
+  document.getElementById('res-rank-icon').textContent=rank.icon;
+  document.getElementById('res-rank-name').textContent=rank.name;
+  document.getElementById('res-rank-name').style.color=rank.cls.includes('diamond')?'#c084fc':rank.cls.includes('platinum')?'#22d3ee':rank.cls.includes('gold')?'#fbbf24':'#00f0ff';
+  document.getElementById('btn-save').disabled=false;
+}
+
+async function saveAndBoard(){
+  const saveBtn=document.getElementById('btn-save');
+  if(saveBtn){saveBtn.disabled=true;saveBtn.innerHTML='<i class="fa-solid fa-spinner fa-spin"></i> Đang lưu...';}
+  try{await fetch(URL_GAS,{method:'POST',mode:'no-cors',headers:{'Content-Type':'text/plain;charset=utf-8'},
+    body:JSON.stringify({action:'saveScore',name:pl.name,studentClass:pl.cls,phone:pl.phone,
+      score:playerLP,ten:pl.name,lop:pl.cls,sdt:pl.phone,diem:playerLP})});}catch(e){}
+  show('s-board');loadBoard();
+}
+
+async function loadBoard(){
+  const list=document.getElementById('board-list');
+  list.innerHTML='<div class="loading-box"><div class="spinner"></div><p>Đang tải...</p></div>';
+  try{
+    const r=await fetch(URL_GAS+'?type=diemthi');
+    const data=await r.json();
+    const rows=data.filter(d=>d.score||d.diem).map(d=>({name:d.name||d.ten||'',cls:d.studentClass||d.lop||'',score:parseInt(d.score||d.diem||0)||0})).sort((a,b)=>b.score-a.score).slice(0,20);
+    if(!rows.length){list.innerHTML='<p style="color:#8b949e;padding:2rem 0">Chưa có dữ liệu.</p>';return;}
+    list.innerHTML='';
+    const icons=['🥇','🥈','🥉'];
+    rows.forEach((r,i)=>{
+      const me=r.name===pl.name&&r.cls===pl.cls;
+      const rc=i===0?'g':i===1?'s':i===2?'b':'';
+      const rank2=getRank(r.score);
+      const div=document.createElement('div');div.className='board-row'+(me?' me':'');
+      div.innerHTML=`<div class="b-rank ${rc}">${i<3?icons[i]:i+1}</div><div><div class="b-name">${rank2.icon} ${r.name}${me?' 👈':''}</div><div class="b-cls">${r.cls}</div></div><div class="b-score">${r.score} LP</div>`;
+      list.appendChild(div);
+    });
+  }catch(e){list.innerHTML='<p style="color:#ef4444;padding:1rem">Lỗi tải bảng điểm.</p>';}
+}
+
+function replay(){
+  bonusTime=0;goldMult=1;hasShield=false;shieldHalf=false;showHint=false;shieldTimeout=false;
+  document.getElementById('btn-start').disabled=false;
+  show('s-gate');
+}
+
+document.addEventListener('keydown',e=>{
+  if(e.key==='Enter'){
+    if(document.getElementById('s-gate').classList.contains('active')){startGame();return;}
+    if(document.getElementById('s-game').classList.contains('active')&&!busy){submitNumericAnswer();}
+  }
+});
+
+show('s-audio-unlock');
+</script>
+</body>
+</html>

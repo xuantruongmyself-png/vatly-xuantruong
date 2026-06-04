@@ -10,6 +10,7 @@
 <script defer src="https://cdn.jsdelivr.net/npm/katex@0.16.9/dist/katex.min.js"></script>
 <script defer src="https://cdn.jsdelivr.net/npm/katex@0.16.9/dist/contrib/auto-render.min.js"></script>
 <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+<script src="https://www.youtube.com/iframe_api"></script>
 <style>
 *,*::before,*::after{box-sizing:border-box;margin:0;padding:0}
 html,body{height:100%}
@@ -347,6 +348,8 @@ body{padding-top:52px}
 /* ══ POV VIDEO CONTAINER ══ */
 .pov-video-container{position:absolute;inset:0;width:100%;height:100%;z-index:1}
 .pov-video-container video{width:100%;height:100%;object-fit:cover}
+#pov-player{width:100%;height:100%}
+#pov-player iframe{width:100%;height:100%;border:none;pointer-events:none}
 .pov-video-container.grayscale-death{filter:grayscale(1) brightness(0.4) contrast(1.2);transition:filter .8s ease-in-out}
 
 /* ══ ROUTE NAVIGATION OVERLAY ══ */
@@ -435,7 +438,7 @@ body{padding-top:52px}
 
   <!-- Layer 1: Video POV nền -->
   <div class="pov-video-container" id="pov-container">
-    <video id="pov-player" src="intro.mp4" autoplay muted playsinline></video>
+    <div id="pov-player"></div>
   </div>
 
   <!-- Layer 2: Overlay chọn hướng rẽ nhánh -->
@@ -587,6 +590,12 @@ body{padding-top:52px}
    CONFIG
 ═══════════════════════════════════════════ */
 const URL_GAS = 'https://script.google.com/macros/s/AKfycbxT-pZNJJbbCiv1HfN99m10Z1kXcRzEhIzMyx6K8u2TDLobpylsXzq_zQKaY9zkHC8m/exec';
+const VIDEOS = {
+  'intro.mp4':       'q9BaQHpgpcQ',
+  'fire.mp4':        'qsQ4DOvnV9A',
+  'khu_quan_su.mp4': '_8H5Ssux45A',
+  'nha_hoang.mp4':   'ygUQrBhBjQ4'
+};
 const TOTAL = 10, T_Q = 15;
 
 // Difficulty settings: [hpDamage, goldReward, lpReward]
@@ -607,6 +616,36 @@ const RANKS = [
 ];
 // LP needed to fill 1 rank tier (for progress bar)
 const LP_PER_RANK = 100;
+
+/* ═══════════════════════════════════════════
+   YOUTUBE PLAYER
+═══════════════════════════════════════════ */
+let ytPlayer=null, ytReady=false, ytEndedCb=null;
+
+function onYouTubeIframeAPIReady(){
+  ytPlayer=new YT.Player('pov-player',{
+    videoId:VIDEOS['intro.mp4'],
+    playerVars:{autoplay:0,mute:1,controls:0,rel:0,modestbranding:1,playsinline:1,enablejsapi:1,loop:0},
+    events:{
+      onReady:function(e){ytReady=true;e.target.mute();},
+      onStateChange:function(e){
+        if(e.data===YT.PlayerState.ENDED&&ytEndedCb){
+          const cb=ytEndedCb;ytEndedCb=null;cb();
+        }
+      }
+    }
+  });
+}
+function ytPlay(file,onEnded){
+  ytEndedCb=onEnded||null;
+  if(!ytReady)return;
+  ytPlayer.loadVideoById(VIDEOS[file]);
+  ytPlayer.mute();
+}
+function ytPause(){if(ytReady)ytPlayer.pauseVideo();}
+function ytGray(on){
+  document.getElementById('pov-container').classList.toggle('grayscale-death',on);
+}
 
 /* ═══════════════════════════════════════════
    GAME STATE
@@ -910,15 +949,10 @@ function initGame(){
   show('s-game');
 
   // Khởi động video nhảy dù nền
-  const player=document.getElementById('pov-player');
-  player.className='';
-  player.src='intro.mp4';
-  player.play();
-
-  // Khi video intro kết thúc → mở bảng chọn hướng
-  player.onended=function(){
+  ytGray(false);
+  ytPlay('intro.mp4', function(){
     document.getElementById('route-overlay').style.display='flex';
-  };
+  });
 
   // Intro overlay parachute animation (CSS)
   const ov=document.getElementById('intro-overlay');
@@ -930,14 +964,10 @@ function chooseRoute(videoFile){
   // Ẩn overlay chọn đường
   document.getElementById('route-overlay').style.display='none';
 
-  const player=document.getElementById('pov-player');
-  player.onended=null; // Xóa listener cũ
-  player.src=videoFile;
-  player.play();
-
   // Sau 3.5s đóng băng hình súng và hiện câu hỏi
+  ytPlay(videoFile, null);
   setTimeout(()=>{
-    player.pause();
+    ytPause();
     document.getElementById('game-wrap').style.display='block';
     document.getElementById('timer-track-wrap').style.display='block';
     nextQ();
@@ -992,10 +1022,7 @@ function pick(letter){
     streak++;if(streak>maxStreak)maxStreak=streak;
 
     // Kích hoạt video súng bắn
-    const player=document.getElementById('pov-player');
-    player.onended=null;
-    player.src='fire.mp4';
-    player.play();
+    ytPlay('fire.mp4', null);
     snd('shoot');
 
     updateCombo();updateSurvivalUI();
@@ -1045,11 +1072,11 @@ function onTimeout(){
 function triggerDeath(){
   stopTimer();snd('dead');
   // Ngả màu xám chết chóc trên video
-  document.getElementById('pov-container').classList.add('grayscale-death');
+  ytGray(true);
   document.getElementById('death-q').textContent=cur;
   document.getElementById('death-lp').textContent=playerLP;
   setTimeout(()=>{
-    document.getElementById('pov-container').classList.remove('grayscale-death');
+    ytGray(false);
     show('s-death');
   },800);
 }

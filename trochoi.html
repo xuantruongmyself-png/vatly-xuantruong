@@ -1388,4 +1388,17 @@ function replay(){
 
 /* ═══════════════════════════════════════════
    KEYBOARD
-════════════════════════════════════════
+═══════════════════════════════════════════ */
+document.addEventListener('keydown',e=>{
+  if(e.key==='Enter'){
+    if(document.getElementById('s-gate').classList.contains('active')){startGame();return;}
+    if(document.getElementById('s-game').classList.contains('active')&&!busy){
+      submitNumericAnswer();
+    }
+  }
+});
+
+show('s-audio-unlock');
+</script>
+</body>
+</html>

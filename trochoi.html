@@ -365,6 +365,9 @@ body{padding-top:52px}
 .btn-route.desert{background:linear-gradient(135deg,#7c2d12,#ea580c);box-shadow:0 4px 15px rgba(234,88,12,.4)}
 .btn-route:hover{transform:translateY(-3px);filter:brightness(1.12)}
 
+/* ══ AUDIO UNLOCK BUTTON PULSE ══ */
+@keyframes btn-pulse{0%{transform:scale(1);box-shadow:0 4px 24px rgba(99,102,241,.4)}100%{transform:scale(1.04);box-shadow:0 6px 32px rgba(99,102,241,.7)}}
+
 /* ══ RESPONSIVE ══ */
 @media(max-width:480px){
   .gate-box,.result-box,.death-box{padding:1.75rem 1.1rem;margin:1rem}
@@ -405,8 +408,21 @@ body{padding-top:52px}
 <div id="flash" class="flash"></div>
 <div id="vignette" style="position:fixed;inset:0;pointer-events:none;z-index:9989"></div>
 
+<!-- ══ AUDIO UNLOCK SPLASH ══ -->
+<div id="s-audio-unlock" class="screen active" style="background:#0d1117;cursor:pointer;" onclick="unlockAudio()">
+  <div style="text-align:center;padding:2rem;">
+    <div style="font-size:5rem;margin-bottom:1rem;animation:skull-float 1.8s ease-in-out infinite alternate">🎮</div>
+    <h1 style="font-size:2rem;font-weight:900;color:#e6edf3;margin-bottom:.75rem">Sinh Tồn Vật Lý</h1>
+    <p style="color:#8b949e;margin-bottom:2rem;font-size:1rem;line-height:1.6">Game FPS học vật lý — âm thanh và video sống động<br>Nhấn bất kỳ đâu để bắt đầu</p>
+    <button style="padding:16px 48px;border-radius:14px;border:none;cursor:pointer;background:linear-gradient(135deg,#6366f1,#8b5cf6);color:#fff;font-size:1.1rem;font-weight:800;font-family:inherit;box-shadow:0 4px 24px rgba(99,102,241,.5);animation:btn-pulse 1.2s ease-in-out infinite alternate">
+      🔊 NHẤN ĐỂ VÀO GAME
+    </button>
+    <p style="margin-top:1rem;font-size:.75rem;color:#6b7280">⚠️ Yêu cầu bật loa / tai nghe để trải nghiệm đầy đủ</p>
+  </div>
+</div>
+
 <!-- ══ GATE ══ -->
-<div id="s-gate" class="screen active">
+<div id="s-gate" class="screen">
   <div class="gate-box">
     <span class="gate-icon">🪂</span>
     <h1>Sinh Tồn Vật Lý</h1>
@@ -629,7 +645,9 @@ function onYouTubeIframeAPIReady(){
     events:{
       onReady:function(e){
         ytReady=true;
-        e.target.mute();
+        // Nếu user đã unlock audio rồi thì unmute, không thì mute
+        if(ytUnmuted){e.target.unMute();e.target.setVolume(85);}
+        else{e.target.mute();}
         // Nếu có video đang chờ, play luôn
         if(ytPendingFile){
           const f=ytPendingFile, cb=ytPendingCb;
@@ -753,6 +771,17 @@ function snd(type){
 /* ═══════════════════════════════════════════
    SCREENS
 ═══════════════════════════════════════════ */
+function unlockAudio(){
+  // Bước 1: Khởi tạo AudioContext (unlock Web Audio)
+  if(!audioCtx){audioCtx=new(window.AudioContext||window.webkitAudioContext)();}
+  if(audioCtx.state==='suspended')audioCtx.resume();
+  // Bước 2: Unmute YouTube ngay lập tức
+  ytUnmuted=true;
+  if(ytReady){ytPlayer.unMute();ytPlayer.setVolume(85);}
+  // Bước 3: Chuyển sang màn hình gate
+  show('s-gate');
+}
+
 function show(id){
   document.querySelectorAll('.screen').forEach(s=>{s.style.display='none';s.classList.remove('active');});
   const s=document.getElementById(id);s.style.display='flex';s.classList.add('active');

@@ -3,7 +3,7 @@
    Dùng chung cho tất cả các trang
 ═══════════════════════════════════════════ */
 const VLXT_AUTH_KEY = 'vlxt_user_v2';
-const VLXT_GAS = 'https://script.google.com/macros/s/AKfycbxT-pZNJJbbCiv1HfN99m10Z1kXcRzEhIzMyx6K8u2TDLobpylsXzq_zQKaY9zkHC8m/exec';
+const VLXT_GAS = 'https://script.google.com/macros/s/AKfycbzxn5Zue4GdGMTnZuts_sNRc2X-BWulWCwKe8fdwJd6PyBbn7pOqxDBG4alOuk96is5/exec';
 
 function vlxtGetUser() {
   try { return JSON.parse(localStorage.getItem(VLXT_AUTH_KEY) || 'null'); } catch { return null; }

@@ -441,6 +441,8 @@ body{padding-top:52px}
       try { u = JSON.parse(localStorage.getItem('vlxt_user_v2')||'null'); } catch(e){}
       if (!u) {
         window.location.replace('login.html?from=' + encodeURIComponent(location.pathname + location.search));
+      } else {
+        document.addEventListener('DOMContentLoaded', function(){ vlxtRenderWidget(u); });
       }
     })();
   </script>

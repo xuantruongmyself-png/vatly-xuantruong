@@ -24,7 +24,7 @@
         body { background:var(--bg); color:var(--text); font-family:'Inter',ui-sans-serif,sans-serif; -webkit-font-smoothing:antialiased; min-height:100vh; }
         a { color:var(--blue); text-decoration:none; }
         math { font-size:1.1em; } sub,sup { line-height:0; font-size:.78em; }
-        .container { max-width:1440px; margin:0 auto; padding:0 24px; }
+        .container { max-width:1180px; margin:0 auto; padding:0 18px; }
 
         /* ═══ HEADER ═══ */
         header {
@@ -175,7 +175,7 @@
 
         /* ═══ SIDEBAR ═══ */
         .side-list { background:var(--card); border:1.5px solid var(--line); border-radius:var(--radius); overflow:hidden; max-height:calc(100vh - 90px); overflow-y:auto; }
-        .side-hd { padding:16px 18px 14px; border-bottom:1.5px solid var(--line); background:var(--card2); }
+        .side-hd { padding:14px 16px 12px; border-bottom:1.5px solid var(--line); background:var(--card2); }
         .side-hd-title { font-size:14.5px; font-weight:700; color:var(--text); margin-bottom:6px; white-space:nowrap; overflow:hidden; text-overflow:ellipsis; }
         .side-hd-prog { font-size:13px; color:var(--sub); margin-bottom:6px; }
         .side-chap { border-top:1.5px solid var(--line); }
@@ -219,17 +219,20 @@
 
         footer { text-align:center; color:var(--sub); font-size:13px; padding:40px 18px 50px; margin-top:30px; border-top:1.5px solid var(--line); }
 
-        /* ═══ LESSON PLAYER — FULL WIDTH như YouTube ═══ */
-        .lesson-view { max-width:100% !important; padding:0 !important; }
-        .player-wrap { display:grid; grid-template-columns:minmax(0,1fr) 400px; gap:0; align-items:start; width:100%; }
-        .player-left { min-width:0; padding:0 24px 0 24px; }
-        .player-right { border-left:1.5px solid var(--line); padding:0; position:sticky; top:56px; height:calc(100vh - 56px); overflow-y:auto; }
-        .player-right .side-list { border:none; border-radius:0; max-height:none; height:100%; }
-        .player-meta { padding:16px 24px; }
-        @media(max-width:1100px) { .player-wrap { grid-template-columns:1fr; } .player-right { position:static; height:auto; border-left:none; border-top:1.5px solid var(--line); } }
         @media(max-width:900px) { .player-layout { grid-template-columns:1fr; } .lesson-sidebar { position:static; } .side-list { max-height:400px; } }
-        @media(max-width:560px) { header { padding:12px 16px; } .nav a span,.nav button span { display:none; } .player-left { padding:0 12px; } .player-meta { padding:12px; } }
+        @media(max-width:560px) { header { padding:12px 16px; } .nav a span,.nav button span { display:none; } }
     </style>
+  <script src="auth.js"></script>
+  <script>
+    // Auth guard — chạy trước khi trang load
+    (function(){
+      var u = null;
+      try { u = JSON.parse(localStorage.getItem('vlxt_user_v2')||'null'); } catch(e){}
+      if (!u) {
+        window.location.replace('login.html?from=' + encodeURIComponent(location.pathname + location.search));
+      }
+    })();
+  </script>
 </head>
 <body>
 
@@ -473,7 +476,7 @@ function renderHome(){
         });
         h+='</div>';
     }
-    app().className='container'; app().innerHTML=h; renderMath(app());
+    app().innerHTML=h; renderMath(app());
 }
 function setTab(t){ homeState.tab=t; renderHome(); }
 function setSort(s){ homeState.sort=s; renderHome(); }
@@ -523,7 +526,7 @@ function renderCourse(name){
         });
         h+=`</div></div>`;
     });
-    app().className='container'; app().innerHTML=h; renderMath(app());
+    app().innerHTML=h; renderMath(app());
 }
 
 /* ═══════════════════════════════════════════
@@ -633,17 +636,16 @@ function renderLesson(key){
     }
 
     // ── Render trang bài học ──
-    app().className='container lesson-view';
     app().innerHTML=`
         <div class="crumb">
             <a onclick="go('#home')">Khóa học</a><span class="sep">›</span>
             <a onclick="go('#course/${encodeURIComponent(course.name)}')">${esc(course.name)}</a>
             <span class="sep">›</span><span class="cur">${esc(lesson.name)}</span>
         </div>
-        <div class="player-wrap">
-            <div class="player-left">
+        <div class="player-layout">
+            <div class="lesson-main">
                 <div class="video-box">${videoHtml}</div>
-                <div class="player-meta"><div class="lesson-detail">
+                <div class="lesson-detail">
                     <h1>${esc(lesson.name)}</h1>
                     <div class="ld-sub">
                         <i class="fa-solid fa-folder-open" style="color:var(--blue)"></i> ${esc(chapter.name)}
@@ -651,7 +653,10 @@ function renderLesson(key){
                     </div>
                     ${lesson.desc?`<div class="ld-desc">${lesson.desc}</div>`:'<div class="ld-desc" style="color:var(--sub)">Thầy sẽ bổ sung mô tả bài học này sớm.</div>'}
                     <div class="ld-actions">
-                        <span id="done-btn" style="display:none"></span>
+                        <span class="btn btn-done ${done?'is-done':''}" id="done-btn" style="cursor:default;user-select:none">
+                            <i class="fa-solid ${done?'fa-circle-check':'fa-hourglass-half'}"></i>
+                            ${done?'Đã hoàn thành':'Tự động lưu khi xem đủ 90%'}
+                        </span>
                         <button class="btn btn-nav" onclick="${prev?`go('#lesson/${encodeURIComponent(prev.key)}')`:''}" ${prev?'':'disabled'}>
                             <i class="fa-solid fa-arrow-left"></i> Bài trước
                         </button>
@@ -660,10 +665,10 @@ function renderLesson(key){
                         </button>
                     </div>
                 </div>
-                </div>${quizHtml}
+                ${quizHtml}
                 ${solutionHtml}
             </div>
-            <div class="player-right">${side}</div>
+            <div class="lesson-sidebar">${side}</div>
         </div>`;
     renderMath(app());
     // Khởi động YouTube IFrame API tracking
@@ -903,27 +908,56 @@ const DEMO_ROWS = [
     {KhoaHoc:'Vật Lý 12', Chuong:'Chương 3 — Từ trường', TenBai:'Bài 2: Lực từ và lực Lorentz',
      Video:'', VideoGiai:'', BaiTap:JSON.stringify(Q_C3B2), MoTaBai:'Lực từ: $F = BIL\\sin\\alpha$. Lực Lorentz: $F = qvB\\sin\\alpha$.', NgayDang:'18/05/2026'},
     {KhoaHoc:'Vật Lý 12', Chuong:'Chương 3 — Từ trường', TenBai:'Bài 3: Cảm ứng điện từ — Định luật Faraday',
-     Video:'', VideoGiai:'', BaiTap:'', MoTaBai:'Từ thông: $\Phi = BS\cos\alpha$. Suất điện động cảm ứng: $e = -\dfrac{\Delta\Phi}{\Delta t}$.', NgayDang:'20/05/2026'},
+     Video:'', VideoGiai:'', BaiTap:'', MoTaBai:'Từ thông: $\\Phi = BS\\cos\\alpha$. Suất điện động cảm ứng: $e = -\\dfrac{\\Delta\\Phi}{\\Delta t}$.', NgayDang:'20/05/2026'},
 
     // ── Chương 4: Hạt nhân nguyên tử ──
     {KhoaHoc:'Vật Lý 12', Chuong:'Chương 4 — Hạt nhân nguyên tử', TenBai:'Bài 1: Cấu tạo hạt nhân — Đồng vị',
      Video:'', VideoGiai:'', BaiTap:JSON.stringify(Q_C4B1), MoTaBai:'Hạt nhân ${}^A_ZX$ có Z proton, (A−Z) neutron. Đồng vị có cùng Z, khác A.', NgayDang:'22/05/2026'},
     {KhoaHoc:'Vật Lý 12', Chuong:'Chương 4 — Hạt nhân nguyên tử', TenBai:'Bài 2: Phóng xạ — Chu kì bán rã',
-     Video:'', VideoGiai:'', BaiTap:JSON.stringify(Q_C4B2), MoTaBai:'Phóng xạ $\alpha,\,\beta^-,\,\beta^+,\,\gamma$. Định luật phân rã: $N = N_0 \cdot 2^{-t/T}$.', NgayDang:'24/05/2026'},
+     Video:'', VideoGiai:'', BaiTap:JSON.stringify(Q_C4B2), MoTaBai:'Phóng xạ $\\alpha,\\,\\beta^-,\\,\\beta^+,\\,\\gamma$. Định luật phân rã: $N = N_0 \\cdot 2^{-t/T}$.', NgayDang:'24/05/2026'},
     {KhoaHoc:'Vật Lý 12', Chuong:'Chương 4 — Hạt nhân nguyên tử', TenBai:'Bài 3: Năng lượng liên kết — Phản ứng hạt nhân',
-     Video:'', VideoGiai:'', BaiTap:JSON.stringify(Q_C4B3), MoTaBai:'Độ hụt khối $\Delta m$. Năng lượng liên kết: $E_{lk} = \Delta m \cdot c^2$.', NgayDang:'26/05/2026'},
+     Video:'', VideoGiai:'', BaiTap:JSON.stringify(Q_C4B3), MoTaBai:'Độ hụt khối $\\Delta m$. Năng lượng liên kết: $E_{lk} = \\Delta m \\cdot c^2$.', NgayDang:'26/05/2026'},
     {KhoaHoc:'Vật Lý 12', Chuong:'Chương 4 — Hạt nhân nguyên tử', TenBai:'Bài 4: Phân hạch · Nhiệt hạch · Ứng dụng',
      Video:'', VideoGiai:'', BaiTap:'', MoTaBai:'Lò phản ứng hạt nhân. Bom nguyên tử và bom nhiệt hạch. Năng lượng tái tạo từ hạt nhân.', NgayDang:'28/05/2026'},
 
     // ═══ VẬT LÝ 11 (placeholder) ═══
     {KhoaHoc:'Vật Lý 11', MoTaKhoa:'Điện học & Từ học lớp 11 — Đang xây dựng nội dung.', AnhKhoa:'🔌',
      Chuong:'Chương 1 — Điện trường', TenBai:'Bài 1: Điện tích — Định luật Coulomb',
-     Video:'', VideoGiai:'', BaiTap:'', MoTaBai:'$F = k\dfrac{|q_1 q_2|}{r^2}$. Hằng số điện: $k = 9\times10^9$ N·m²/C².', NgayDang:'01/04/2026'},
+     Video:'', VideoGiai:'', BaiTap:'', MoTaBai:'$F = k\\dfrac{|q_1 q_2|}{r^2}$. Hằng số điện: $k = 9\\times10^9$ N·m²/C².', NgayDang:'01/04/2026'},
 
     // ═══ VẬT LÝ 10 (placeholder) ═══
     {KhoaHoc:'Vật Lý 10', MoTaKhoa:'Cơ học & Nhiệt học lớp 10 — Đang xây dựng nội dung.', AnhKhoa:'🚀',
      Chuong:'Chương 1 — Động học', TenBai:'Bài 1: Chuyển động thẳng đều',
      Video:'', VideoGiai:'', BaiTap:'', MoTaBai:'Vận tốc trung bình: $v = s/t$. Phương trình: $x = x_0 + vt$.', NgayDang:'01/04/2026'},
+];
+
+window.addEventListener('DOMContentLoaded', init);
+</script>
+</body>
+</html>
+     Video:'', VideoGiai:'', BaiTap:'', MoTaBai:'Từ thông: $\\Phi = BS\\cos\\alpha$. Suất điện động cảm ứng: $e = -\\dfrac{\\Delta\\Phi}{\\Delta t}$.', NgayDang:'20/05/2026'},
+
+    // ── Chương 4: Hạt nhân nguyên tử ──
+    {KhoaHoc:'Vật Lý 12', Chuong:'Chương 4 — Hạt nhân nguyên tử', TenBai:'Bài 1: Cấu tạo hạt nhân — Đồng vị',
+     Video:'', VideoGiai:'', BaiTap:JSON.stringify(Q_C4B1), MoTaBai:'Hạt nhân ${}^A_ZX$ có Z proton, (A−Z) neutron. Đồng vị có cùng Z, khác A.', NgayDang:'22/05/2026'},
+    {KhoaHoc:'Vật Lý 12', Chuong:'Chương 4 — Hạt nhân nguyên tử', TenBai:'Bài 2: Phóng xạ — Chu kì bán rã',
+     Video:'', VideoGiai:'', BaiTap:JSON.stringify(Q_C4B2), MoTaBai:'Phóng xạ $\\alpha,\\,\\beta^-,\\,\\beta^+,\\,\\gamma$. Định luật phân rã: $N = N_0 \\cdot 2^{-t/T}$.', NgayDang:'24/05/2026'},
+    {KhoaHoc:'Vật Lý 12', Chuong:'Chương 4 — Hạt nhân nguyên tử', TenBai:'Bài 3: Năng lượng liên kết — Phản ứng hạt nhân',
+     Video:'', VideoGiai:'', BaiTap:JSON.stringify(Q_C4B3), MoTaBai:'Độ hụt khối $\\Delta m$. Năng lượng liên kết: $E_{lk} = \\Delta m \\cdot c^2$.', NgayDang:'26/05/2026'},
+    {KhoaHoc:'Vật Lý 12', Chuong:'Chương 4 — Hạt nhân nguyên tử', TenBai:'Bài 4: Phân hạch · Nhiệt hạch · Ứng dụng',
+     Video:'', VideoGiai:'', BaiTap:'', MoTaBai:'Lò phản ứng hạt nhân. Bom nguyên tử và bom nhiệt hạch. Năng lượng tái tạo từ hạt nhân.', NgayDang:'28/05/2026'},
+
+    // ═══ VẬT LÝ 11 (placeholder) ═══
+    {KhoaHoc:'Vật Lý 11', MoTaKhoa:'Điện học & Từ học lớp 11 — Đang xây dựng nội dung.', AnhKhoa:'🔌',
+     Chuong:'Chương 1 — Điện trường', TenBai:'Bài 1: Điện tích — Định luật Coulomb',
+     Video:'', VideoGiai:'', BaiTap:'', MoTaBai:'$F = k\\dfrac{|q_1 q_2|}{r^2}$. Hằng số điện: $k = 9\\times10^9$ N·m²/C².', NgayDang:'01/04/2026'},
+
+    // ═══ VẬT LÝ 10 (placeholder) ═══
+    {KhoaHoc:'Vật Lý 10', MoTaKhoa:'Cơ học & Nhiệt học lớp 10 — Đang xây dựng nội dung.', AnhKhoa:'🚀',
+     Chuong:'Chương 1 — Động học', TenBai:'Bài 1: Chuyển động thẳng đều',
+     Video:'', VideoGiai:'', BaiTap:'', MoTaBai:'Vận tốc trung bình: $v = s/t$. Phương trình: $x = x_0 + vt$.', NgayDang:'01/04/2026'},
+
+    // ═══ VẬT LÝ 10 (placeholder) ═══ (sẽ bổ sung sau)
 ];
 
 window.addEventListener('DOMContentLoaded', init);

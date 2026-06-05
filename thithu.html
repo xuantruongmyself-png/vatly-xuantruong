@@ -220,6 +220,17 @@
             .tf-statement { flex-direction: column; align-items: flex-start; }
         }
     </style>
+  <script src="auth.js"></script>
+  <script>
+    // Auth guard — chạy trước khi trang load
+    (function(){
+      var u = null;
+      try { u = JSON.parse(localStorage.getItem('vlxt_user_v2')||'null'); } catch(e){}
+      if (!u) {
+        window.location.replace('login.html?from=' + encodeURIComponent(location.pathname + location.search));
+      }
+    })();
+  </script>
 </head>
 <body>
 

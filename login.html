@@ -4,7 +4,7 @@
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
 <title>Đăng nhập · Vật Lý Xuân Trường</title>
-<script src="https://accounts.google.com/gsi/client" async></script>
+<script src="https://accounts.google.com/gsi/client" defer></script>
 <style>
   *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
   body {
@@ -84,7 +84,7 @@
   .spinner { display: inline-block; width: 16px; height: 16px; border-radius: 50%;
     border: 2px solid rgba(255,255,255,0.3); border-top-color: #fff;
     animation: spin 0.7s linear infinite; vertical-align: -3px; margin-right: 6px; }
-  .google-btn-wrap { margin-bottom: 4px; }
+  .google-btn-wrap { margin-bottom: 4px; min-height: 44px; }
   .google-btn-wrap > div { width: 100% !important; }
   .or-divider { display: flex; align-items: center; gap: 10px; margin: 14px 0 10px; }
   .or-divider::before, .or-divider::after { content:''; flex:1; height:1px; background:rgba(255,255,255,0.1); }
@@ -217,4 +217,84 @@ async function doRegister() {
     const d = await r.json();
     if (d.ok) {
       localStorage.setItem('vlxt_user_v2', JSON.stringify(d.user));
-      showMsg('reg-msg','success','T
+      showMsg('reg-msg','success','Tạo tài khoản thành công!');
+      setTimeout(() => { window.location.href = getRedirect(); }, 900);
+    } else {
+      showMsg('reg-msg','error', d.msg || 'Không thể tạo tài khoản. Thử lại nhé!');
+    }
+  } catch(e) {
+    showMsg('reg-msg','error','Lỗi kết nối. Thử lại nhé!');
+  }
+  btn.disabled = false;
+  btn.textContent = 'Tạo tài khoản';
+}
+
+// Đã đăng nhập rồi → redirect thẳng
+const _u = (() => { try { return JSON.parse(localStorage.getItem('vlxt_user_v2')||'null'); } catch { return null; } })();
+if (_u) window.location.href = getRedirect();
+
+// ──────────────────────────────────
+// GOOGLE SIGN-IN
+// ──────────────────────────────────
+const GOOGLE_CLIENT_ID = '1022891995284-miquu1f7rlpie7ug9884sgagf21nputc.apps.googleusercontent.com';
+
+function decodeJWT(token) {
+  try {
+    const base64 = token.split('.')[1].replace(/-/g,'+').replace(/_/g,'/');
+    return JSON.parse(atob(base64));
+  } catch(e) { return null; }
+}
+
+async function handleGoogleCredential(response) {
+  const payload = decodeJWT(response.credential);
+  if (!payload) return showMsg('login-msg','error','Lỗi xác thực Google.');
+  // Gọi Apps Script để đăng ký/đăng nhập bằng Google
+  try {
+    const fd = new FormData();
+    fd.append('action', 'loginGoogle');
+    fd.append('data', JSON.stringify({
+      hoten: payload.name,
+      email: payload.email,
+      avatar: payload.picture,
+      googleId: payload.sub
+    }));
+    const r = await fetch(GAS, { method:'POST', body: fd, mode:'cors' });
+    const d = await r.json();
+    if (d.ok) {
+      localStorage.setItem('vlxt_user_v2', JSON.stringify(d.user));
+      window.location.href = getRedirect();
+    } else {
+      showMsg('login-msg','error', d.msg || 'Lỗi đăng nhập Google.');
+    }
+  } catch(e) {
+    // Fallback: lưu trực tiếp không qua Sheets
+    const user = { hoten: payload.name, lop: 'Google', sdt: payload.email, email: payload.email, avatar: payload.picture, lpTotal: 0 };
+    localStorage.setItem('vlxt_user_v2', JSON.stringify(user));
+    window.location.href = getRedirect();
+  }
+}
+
+// Khởi tạo Google Sign-In sau khi thư viện load
+// Google GSI gọi hàm này tự động khi thư viện load xong
+function onGoogleLibraryLoad() {
+  google.accounts.id.initialize({
+    client_id: GOOGLE_CLIENT_ID,
+    callback: handleGoogleCredential,
+    auto_select: false,
+    cancel_on_tap_outside: true
+  });
+  google.accounts.id.renderButton(
+    document.getElementById('google-btn-container'),
+    { theme: 'filled_blue', size: 'large', width: 372, text: 'signin_with', shape: 'rectangular', logo_alignment: 'left' }
+  );
+  // Hiện One Tap nếu chưa đăng nhập
+  google.accounts.id.prompt();
+}
+
+// Fallback: nếu script đã load trước khi hàm này được định nghĩa
+if (typeof google !== 'undefined' && google.accounts) {
+  onGoogleLibraryLoad();
+}
+</script>
+</body>
+</html>

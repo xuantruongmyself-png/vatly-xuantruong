@@ -30,6 +30,7 @@ function doPost(e) {
     const action = (data.action || '').toLowerCase();
     if (action === 'register')      return registerUser(data);
     if (action === 'login')         return loginUser(data);
+    if (action === 'logingoogle')   return loginGoogle(data);
     if (action === 'savebaihoc')    return saveBaiHoc(data);
     if (action === 'deletebaihoc')  return deleteBaiHoc(data);
     if (action === 'savequestions') return saveQuestions(data);
@@ -104,6 +105,35 @@ function loginUser(data) {
     }
   }
   return jsonOut({ ok: false, msg: 'Số điện thoại hoặc mật khẩu không đúng!' });
+}
+
+// ── Đăng nhập bằng Google ────────────────────────────────────
+
+function loginGoogle(data) {
+  const sheet = getOrCreate('TaiKhoan', ['sdt','hoten','lop','matkhau','ngayDK','lpTotal','diemGame']);
+  const rows  = sheet.getDataRange().getValues();
+  const email = String(data.email || '').trim().toLowerCase();
+  if (!email) return jsonOut({ ok: false, msg: 'Không có email Google.' });
+  // Tìm tài khoản theo email (lưu ở cột sdt)
+  for (let i = 1; i < rows.length; i++) {
+    if (String(rows[i][0]).trim().toLowerCase() === email) {
+      // Cập nhật tên nếu có thay đổi
+      if (data.hoten) sheet.getRange(i+1, 2).setValue(data.hoten);
+      return jsonOut({ ok: true, user: {
+        sdt: rows[i][0], hoten: data.hoten || rows[i][1],
+        lop: rows[i][2] || 'Google', email: email,
+        avatar: data.avatar || '', lpTotal: rows[i][5] || 0
+      }});
+    }
+  }
+  // Tài khoản chưa có → tự động đăng ký
+  const now = new Date().toISOString();
+  sheet.appendRow([email, data.hoten || email, 'Google', 'GOOGLE_AUTH', now, 0, 0]);
+  return jsonOut({ ok: true, user: {
+    sdt: email, hoten: data.hoten || email,
+    lop: 'Google', email: email,
+    avatar: data.avatar || '', lpTotal: 0
+  }});
 }
 
 // ── GET: Hồ sơ học sinh ──────────────────────────────────────
@@ -226,33 +256,4 @@ function saveProgress(data) {
 
 // ── POST: Quản lý bài học (Admin) ─────────────────────────────
 
-function saveBaiHoc(data) {
-  const sheet = getOrCreate('BaiHoc', ['KhoaHoc','Chuong','TenBai','Video','VideoGiai','MoTaBai','NgayDang','BaiTap']);
-  if (data.rowIndex) {
-    sheet.getRange(data.rowIndex, 1, 1, 8).setValues([[
-      data.KhoaHoc||'', data.Chuong||'', data.TenBai||'', data.Video||'',
-      data.VideoGiai||'', data.MoTaBai||'', data.NgayDang||new Date().toISOString(), data.BaiTap||''
-    ]]);
-  } else {
-    sheet.appendRow([
-      data.KhoaHoc||'', data.Chuong||'', data.TenBai||'', data.Video||'',
-      data.VideoGiai||'', data.MoTaBai||'', data.NgayDang||new Date().toISOString(), data.BaiTap||''
-    ]);
-  }
-  return jsonOut({ ok: true });
-}
-
-function deleteBaiHoc(data) {
-  const sheet = getOrCreate('BaiHoc', ['KhoaHoc','Chuong','TenBai','Video','VideoGiai','MoTaBai','NgayDang','BaiTap']);
-  if (data.rowIndex) sheet.deleteRow(data.rowIndex);
-  return jsonOut({ ok: true });
-}
-
-function saveQuestions(data) {
-  const sheet = getOrCreate('NganHangDe', ['id','type','question','optA','optB','optC','optD','correct']);
-  if (data.clearFirst) { const last = sheet.getLastRow(); if (last > 1) sheet.deleteRows(2, last-1); }
-  (data.questions || []).forEach(q => {
-    sheet.appendRow([q.id||'', q.type||'mc', q.question||'', q.optA||'', q.optB||'', q.optC||'', q.optD||'', q.correct||'']);
-  });
-  return jsonOut({ ok: true, count: (data.questions||[]).length });
-}
+f

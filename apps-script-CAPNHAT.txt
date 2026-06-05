@@ -1,5 +1,5 @@
 // ════════════════════════════════════════════════════════════════
-// APPS SCRIPT TOÀN DIỆN — Vật Lý Xuân Trường
+// APPS SCRIPT TOÀN DIỆN — Vật Lý Xuân Trường  (có Auth v2)
 // Dán toàn bộ đoạn này vào Google Apps Script, rồi Deploy lại.
 // ════════════════════════════════════════════════════════════════
 // CẤU TRÚC GOOGLE SHEETS CẦN CÓ:
@@ -7,16 +7,18 @@
 //   Tab "NganHangDe": id | type | question | optA | optB | optC | optD | correct
 //   Tab "BangVang"  : name | studentClass | phone | score | timestamp
 //   Tab "TienDo"    : sdt | lesson | khoa | ten | lop | ngay
+//   Tab "TaiKhoan"  : sdt | hoten | lop | matkhau | ngayDK | lpTotal | diemGame
 // ════════════════════════════════════════════════════════════════
 
 function doGet(e) {
   const type = (e.parameter.type || '').toLowerCase();
   const hs   = e.parameter.hs || '';
   try {
-    if (type === 'baihoc')  return getBaiHoc();
-    if (type === 'diemthi') return getDiemThi();
-    if (type === 'tiendo')  return getTienDo(hs);
-    return getExamQuestions(); // default: lấy đề thi
+    if (type === 'baihoc')    return getBaiHoc();
+    if (type === 'diemthi')   return getDiemThi();
+    if (type === 'tiendo')    return getTienDo(hs);
+    if (type === 'profile')   return getProfile(hs);
+    return getExamQuestions();
   } catch(err) {
     return jsonOut({ error: err.message });
   }
@@ -24,13 +26,16 @@ function doGet(e) {
 
 function doPost(e) {
   try {
-    const data = JSON.parse(e.postData.contents);
+    const data   = JSON.parse(e.postData.contents);
     const action = (data.action || '').toLowerCase();
+    if (action === 'register')      return registerUser(data);
+    if (action === 'login')         return loginUser(data);
     if (action === 'savebaihoc')    return saveBaiHoc(data);
     if (action === 'deletebaihoc')  return deleteBaiHoc(data);
     if (action === 'savequestions') return saveQuestions(data);
     if (action === 'saveprogress')  return saveProgress(data);
-    return saveScore(data); // backward compat: lưu điểm thi
+    if (action === 'savescore')     return saveScore(data);
+    return saveScore(data);
   } catch(err) {
     return jsonOut({ error: err.message });
   }
@@ -65,6 +70,79 @@ function jsonOut(obj) {
     .setMimeType(ContentService.MimeType.JSON);
 }
 
+// ── AUTH: Đăng ký ─────────────────────────────────────────────
+
+function registerUser(data) {
+  const sheet = getOrCreate('TaiKhoan', ['sdt','hoten','lop','matkhau','ngayDK','lpTotal','diemGame']);
+  const rows  = sheet.getDataRange().getValues();
+  // Kiểm tra SĐT đã tồn tại chưa (bỏ qua hàng header)
+  for (let i = 1; i < rows.length; i++) {
+    if (String(rows[i][0]).trim() === String(data.sdt).trim()) {
+      return jsonOut({ ok: false, msg: 'Số điện thoại đã được đăng ký!' });
+    }
+  }
+  sheet.appendRow([
+    data.sdt, data.hoten, data.lop, data.matkhau,
+    new Date().toISOString(), 0, 0
+  ]);
+  return jsonOut({ ok: true, msg: 'Đăng ký thành công!', user: { sdt: data.sdt, hoten: data.hoten, lop: data.lop, lpTotal: 0, diemGame: 0 } });
+}
+
+// ── AUTH: Đăng nhập ──────────────────────────────────────────
+
+function loginUser(data) {
+  const sheet = getOrCreate('TaiKhoan', ['sdt','hoten','lop','matkhau','ngayDK','lpTotal','diemGame']);
+  const rows  = sheet.getDataRange().getValues();
+  for (let i = 1; i < rows.length; i++) {
+    const row = rows[i];
+    if (String(row[0]).trim() === String(data.sdt).trim() &&
+        String(row[3]).trim() === String(data.matkhau).trim()) {
+      return jsonOut({ ok: true, user: {
+        sdt: row[0], hoten: row[1], lop: row[2],
+        lpTotal: row[5] || 0, diemGame: row[6] || 0
+      }});
+    }
+  }
+  return jsonOut({ ok: false, msg: 'Số điện thoại hoặc mật khẩu không đúng!' });
+}
+
+// ── GET: Hồ sơ học sinh ──────────────────────────────────────
+
+function getProfile(sdt) {
+  const acc   = getOrCreate('TaiKhoan', ['sdt','hoten','lop','matkhau','ngayDK','lpTotal','diemGame']);
+  const rows  = acc.getDataRange().getValues();
+  let user    = null;
+  for (let i = 1; i < rows.length; i++) {
+    if (String(rows[i][0]).trim() === String(sdt).trim()) {
+      user = { sdt: rows[i][0], hoten: rows[i][1], lop: rows[i][2], lpTotal: rows[i][5]||0, diemGame: rows[i][6]||0 };
+      break;
+    }
+  }
+  if (!user) return jsonOut({ ok: false, msg: 'Không tìm thấy tài khoản' });
+
+  // Lấy điểm thi từ BangVang
+  const bg    = getOrCreate('BangVang', ['name','studentClass','phone','score','timestamp']);
+  const bgRows = bg.getDataRange().getValues();
+  const scores = [];
+  for (let i = 1; i < bgRows.length; i++) {
+    if (String(bgRows[i][2]).trim() === String(sdt).trim()) {
+      scores.push({ ten: bgRows[i][0], diem: bgRows[i][3], ngay: bgRows[i][4] });
+    }
+  }
+
+  // Lấy tiến độ bài học
+  const td    = getOrCreate('TienDo', ['sdt','lesson','khoa','ten','lop','ngay']);
+  const tdRows = td.getDataRange().getValues();
+  const tiendo = [];
+  for (let i = 1; i < tdRows.length; i++) {
+    if (String(tdRows[i][0]).trim() === String(sdt).trim()) {
+      tiendo.push({ lesson: tdRows[i][1], khoa: tdRows[i][2] });
+    }
+  }
+
+  return jsonOut({ ok: true, user, scores, tiendo });
+}
+
 // ── GET: Bài học ──────────────────────────────────────────────
 
 function getBaiHoc() {
@@ -76,9 +154,9 @@ function getBaiHoc() {
 
 function getExamQuestions() {
   const sheet = getOrCreate('NganHangDe', ['id','type','question','optA','optB','optC','optD','correct']);
-  const data = sheet.getDataRange().getValues();
+  const data  = sheet.getDataRange().getValues();
   if (data.length < 2) return jsonOut([]);
-  const rows = data.slice(1).map(r => ({
+  const rows  = data.slice(1).map(r => ({
     id: r[0], type: r[1] || 'mc',
     question: r[2],
     options: { A: r[3], B: r[4], C: r[5], D: r[6] },
@@ -90,119 +168,20 @@ function getExamQuestions() {
 // ── GET: Điểm thi ─────────────────────────────────────────────
 
 function getDiemThi() {
-  const ss = SpreadsheetApp.getActiveSpreadsheet();
-  // Thử BangVang trước, sau đó DiemThi
-  const sheet = ss.getSheetByName('BangVang') || ss.getSheetByName('DiemThi');
-  if (!sheet) return jsonOut([]);
+  const sheet = getOrCreate('BangVang', ['name','studentClass','phone','score','timestamp']);
   return jsonOut(sheetToJson(sheet));
 }
 
-// ── GET: Tiến độ học sinh ─────────────────────────────────────
+// ── GET: Tiến độ ──────────────────────────────────────────────
 
 function getTienDo(sdt) {
-  if (!sdt) return jsonOut([]);
   const sheet = getOrCreate('TienDo', ['sdt','lesson','khoa','ten','lop','ngay']);
-  const data = sheet.getDataRange().getValues();
-  if (data.length < 2) return jsonOut([]);
-  const rows = data.slice(1)
-    .filter(r => r[0] && r[0].toString() === sdt.toString())
-    .map(r => r[1]); // trả về mảng lesson key
-  return jsonOut(rows);
+  const rows  = sheetToJson(sheet);
+  if (!sdt) return jsonOut(rows);
+  return jsonOut(rows.filter(r => String(r.sdt) === String(sdt)));
 }
 
-// ── POST: Lưu / Cập nhật bài học ─────────────────────────────
-
-function saveBaiHoc(data) {
-  const sheet = getOrCreate('BaiHoc', ['KhoaHoc','Chuong','TenBai','Video','VideoGiai','MoTaBai','NgayDang','BaiTap']);
-  const allData = sheet.getDataRange().getValues();
-
-  // Tìm hàng cần cập nhật (theo originalKey hoặc KhoaHoc+Chuong+TenBai)
-  const searchKey = data.originalKey || `${data.KhoaHoc}|||${data.Chuong}|||${data.TenBai}`;
-  const parts = searchKey.split('|||');
-  let targetRow = -1;
-
-  for (let i = 1; i < allData.length; i++) {
-    const rK = allData[i][0], rC = allData[i][1], rT = allData[i][2];
-    if (rK === parts[0] && rC === parts[1] && rT === parts[2]) {
-      targetRow = i + 1; // 1-indexed
-      break;
-    }
-  }
-
-  const rowData = [
-    data.KhoaHoc  || '',
-    data.Chuong   || '',
-    data.TenBai   || '',
-    data.Video    || '',
-    data.VideoGiai|| '',
-    data.MoTaBai  || '',
-    data.NgayDang || new Date().toLocaleDateString('vi-VN'),
-    data.BaiTap   || ''
-  ];
-
-  if (targetRow > 0) {
-    sheet.getRange(targetRow, 1, 1, rowData.length).setValues([rowData]);
-  } else {
-    sheet.appendRow(rowData);
-  }
-
-  return jsonOut({ result: 'success' });
-}
-
-// ── POST: Xóa bài học ─────────────────────────────────────────
-
-function deleteBaiHoc(data) {
-  const sheet = getOrCreate('BaiHoc', ['KhoaHoc','Chuong','TenBai','Video','VideoGiai','MoTaBai','NgayDang','BaiTap']);
-  const allData = sheet.getDataRange().getValues();
-
-  for (let i = 1; i < allData.length; i++) {
-    if (allData[i][0] === data.KhoaHoc &&
-        allData[i][1] === data.Chuong  &&
-        allData[i][2] === data.TenBai) {
-      sheet.deleteRow(i + 1);
-      break;
-    }
-  }
-  return jsonOut({ result: 'success' });
-}
-
-// ── POST: Xuất bản đề thi ─────────────────────────────────────
-
-function saveQuestions(data) {
-  const sheet = getOrCreate('NganHangDe', ['id','type','question','optA','optB','optC','optD','correct']);
-  // Xóa dữ liệu cũ (giữ header)
-  const lastRow = sheet.getLastRow();
-  if (lastRow > 1) sheet.deleteRows(2, lastRow - 1);
-
-  const qs = data.questions || [];
-  const rows = qs.map(q => [
-    q.id, q.type || 'mc', q.question,
-    q.options.A, q.options.B, q.options.C, q.options.D,
-    q.correct
-  ]);
-  if (rows.length) {
-    sheet.getRange(2, 1, rows.length, 8).setValues(rows);
-  }
-  return jsonOut({ result: 'success', count: rows.length });
-}
-
-// ── POST: Lưu tiến độ học ────────────────────────────────────
-
-function saveProgress(data) {
-  const sheet = getOrCreate('TienDo', ['sdt','lesson','khoa','ten','lop','ngay']);
-  const allData = sheet.getDataRange().getValues();
-
-  // Tránh duplicate: nếu đã có cặp (sdt, lesson) thì bỏ qua
-  for (let i = 1; i < allData.length; i++) {
-    if (allData[i][0] == data.hs && allData[i][1] == data.lesson) {
-      return jsonOut({ result: 'exists' });
-    }
-  }
-  sheet.appendRow([data.hs, data.lesson, data.khoa||'', data.ten||'', data.lop||'', data.ngay||'']);
-  return jsonOut({ result: 'success' });
-}
-
-// ── POST: Lưu điểm thi (backward compat) ─────────────────────
+// ── POST: Lưu điểm thi ────────────────────────────────────────
 
 function saveScore(data) {
   const sheet = getOrCreate('BangVang', ['name','studentClass','phone','score','timestamp']);
@@ -210,23 +189,70 @@ function saveScore(data) {
     data.name || data.ten || '',
     data.studentClass || data.lop || '',
     data.phone || data.sdt || '',
-    data.score || data.diem || '',
-    new Date().toLocaleString('vi-VN')
+    data.score || data.diem || 0,
+    new Date().toISOString()
   ]);
-  return jsonOut({ result: 'success' });
+  // Cập nhật lpTotal trong TaiKhoan
+  if (data.phone || data.sdt) {
+    const sdt = data.phone || data.sdt;
+    const acc = getOrCreate('TaiKhoan', ['sdt','hoten','lop','matkhau','ngayDK','lpTotal','diemGame']);
+    const rows = acc.getDataRange().getValues();
+    for (let i = 1; i < rows.length; i++) {
+      if (String(rows[i][0]).trim() === String(sdt).trim()) {
+        const cur = Number(rows[i][5]) || 0;
+        const newScore = Number(data.score || data.diem || 0);
+        acc.getRange(i+1, 6).setValue(Math.max(cur, newScore)); // giữ điểm cao nhất
+        break;
+      }
+    }
+  }
+  return jsonOut({ ok: true });
 }
 
-// ════════════════════════════════════════════════════════════════
-// HƯỚNG DẪN DEPLOY LẦN ĐẦU (chỉ làm 1 lần duy nhất):
-//  1. Mở Google Sheets → Extensions → Apps Script
-//  2. Xóa code cũ, dán code này vào → Lưu
-//  3. Nhấn Deploy → New deployment → Web app
-//     - Execute as: Me  |  Who has access: Anyone
-//  4. Copy URL → dán vào DB_URL trong tất cả file .html
-//
-// HƯỚNG DẪN CẬP NHẬT CODE (những lần sau — URL KHÔNG ĐỔI):
-//  1. Sửa code → Lưu (Ctrl+S)
-//  2. Nhấn Triển khai → Quản lý các tùy chọn triển khai
-//  3. Click bút chì ✏️ → Đổi "Phiên bản" → "Phiên bản mới"
-//  4. Nhấn Triển khai → Xong ✅ (không cần sửa file .html)
-// ════════════════════════════════════════════════════════════════
+// ── POST: Lưu tiến độ ────────────────────────────────────────
+
+function saveProgress(data) {
+  const sheet = getOrCreate('TienDo', ['sdt','lesson','khoa','ten','lop','ngay']);
+  // Kiểm tra đã có chưa
+  const rows = sheet.getDataRange().getValues();
+  for (let i = 1; i < rows.length; i++) {
+    if (String(rows[i][0]) === String(data.sdt) && String(rows[i][1]) === String(data.lesson)) {
+      return jsonOut({ ok: true, msg: 'already' });
+    }
+  }
+  sheet.appendRow([data.sdt, data.lesson, data.khoa||'', data.ten||'', data.lop||'', new Date().toISOString()]);
+  return jsonOut({ ok: true });
+}
+
+// ── POST: Quản lý bài học (Admin) ─────────────────────────────
+
+function saveBaiHoc(data) {
+  const sheet = getOrCreate('BaiHoc', ['KhoaHoc','Chuong','TenBai','Video','VideoGiai','MoTaBai','NgayDang','BaiTap']);
+  if (data.rowIndex) {
+    sheet.getRange(data.rowIndex, 1, 1, 8).setValues([[
+      data.KhoaHoc||'', data.Chuong||'', data.TenBai||'', data.Video||'',
+      data.VideoGiai||'', data.MoTaBai||'', data.NgayDang||new Date().toISOString(), data.BaiTap||''
+    ]]);
+  } else {
+    sheet.appendRow([
+      data.KhoaHoc||'', data.Chuong||'', data.TenBai||'', data.Video||'',
+      data.VideoGiai||'', data.MoTaBai||'', data.NgayDang||new Date().toISOString(), data.BaiTap||''
+    ]);
+  }
+  return jsonOut({ ok: true });
+}
+
+function deleteBaiHoc(data) {
+  const sheet = getOrCreate('BaiHoc', ['KhoaHoc','Chuong','TenBai','Video','VideoGiai','MoTaBai','NgayDang','BaiTap']);
+  if (data.rowIndex) sheet.deleteRow(data.rowIndex);
+  return jsonOut({ ok: true });
+}
+
+function saveQuestions(data) {
+  const sheet = getOrCreate('NganHangDe', ['id','type','question','optA','optB','optC','optD','correct']);
+  if (data.clearFirst) { const last = sheet.getLastRow(); if (last > 1) sheet.deleteRows(2, last-1); }
+  (data.questions || []).forEach(q => {
+    sheet.appendRow([q.id||'', q.type||'mc', q.question||'', q.optA||'', q.optB||'', q.optC||'', q.optD||'', q.correct||'']);
+  });
+  return jsonOut({ ok: true, count: (data.questions||[]).length });
+}

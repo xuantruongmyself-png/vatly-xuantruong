@@ -1,7 +1,7 @@
 # 🔬 Vật Lý Xuân Trường — Project Brief
 
 ## Tổng quan
-Website học vật lý online tại **vatlyxuantruong.netlify.app**, do thầy Trường (không biết lập trình) xây dựng cùng Claude. Stack **100% miễn phí, serverless**: HTML/CSS/JS thuần + Google Sheets làm database + Netlify hosting.
+Website học vật lý online tại **xuantruongmyself-png.github.io/vatly-xuantruong** (GitHub Pages, auto-deploy qua GitHub Actions), do thầy Trường (không biết lập trình) xây dựng cùng Claude. Stack **100% miễn phí, serverless**: HTML/CSS/JS thuần + Google Sheets làm database + Netlify hosting.
 
 ## Kiến trúc hệ thống
 ```
@@ -31,7 +31,7 @@ Website học vật lý online tại **vatlyxuantruong.netlify.app**, do thầy 
 **Đọc (GET):** `?type=baihoc` / `?type=diemthi` / `?type=tiendo`
 **Ghi (POST):** `action: saveBaiHoc / deleteBaiHoc / saveQuestions / saveDiemThi`
 
-**Apps Script URL:** `https://script.google.com/macros/s/AKfycbxT-pZNJJbbCiv1HfN99m10Z1kXcRzEhIzMyx6K8u2TDLobpylsXzq_zQKaY9zkHC8m/exec`
+**Apps Script URL:** `https://script.google.com/macros/s/AKfycbzxn5Zue4GdGMTnZuts_sNRc2X-BWulWCwKe8fdwJd6PyBbn7pOqxDBG4alOuk96is5/exec`
 
 **Netlify Site ID:** `412fbb45-580b-410c-bfbb-6590331f4407`
 
@@ -41,7 +41,7 @@ Website học vật lý online tại **vatlyxuantruong.netlify.app**, do thầy 
 - **POST dùng `mode:'no-cors'`** → không đọc được response, nhưng dữ liệu vẫn lưu đúng vào Sheets.
 - **Parser .docx** trong admin.html: dùng `mammoth.js` + `JSZip` để đọc file Word ngay trên trình duyệt, tách câu hỏi A/B/C/D, nhận dạng đáp án đúng bằng dấu `*` (ví dụ `*C.`).
 - **KaTeX**: render công thức vật lý dạng `$...$` và `$$...$$`.
-- **Deploy**: Thầy kéo thả thư mục vào app.netlify.com → web cập nhật ngay.
+- **Deploy**: Push lên GitHub → GitHub Actions tự build và deploy lên GitHub Pages (~1 phút). Không cần Netlify.
 
 ## Admin panel (admin.html) — 3 tab
 

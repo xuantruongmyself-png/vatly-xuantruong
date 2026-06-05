@@ -281,14 +281,14 @@ function onGoogleLibraryLoad() {
     client_id: GOOGLE_CLIENT_ID,
     callback: handleGoogleCredential,
     auto_select: false,
-    cancel_on_tap_outside: true
+    cancel_on_tap_outside: true,
+    use_fedcm_for_prompt: false
   });
   google.accounts.id.renderButton(
     document.getElementById('google-btn-container'),
     { theme: 'filled_blue', size: 'large', width: 372, text: 'signin_with', shape: 'rectangular', logo_alignment: 'left' }
   );
-  // Hiện One Tap nếu chưa đăng nhập
-  google.accounts.id.prompt();
+  // Bỏ google.accounts.id.prompt() vì gây lỗi COOP trên GitHub Pages
 }
 
 // Fallback: nếu script đã load trước khi hàm này được định nghĩa

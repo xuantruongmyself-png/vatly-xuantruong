@@ -311,6 +311,25 @@
     const TYPE_TITLE = { mc:'PHẦN I. Trắc nghiệm nhiều phương án (A/B/C/D)', tf:'PHẦN II. Trắc nghiệm Đúng/Sai', short:'PHẦN III. Trắc nghiệm trả lời ngắn' };
     const SUBLABEL = { A:'a)', B:'b)', C:'c)', D:'d)' };
 
+    // Auto-fill form từ tài khoản đã đăng nhập
+    (function(){
+      try {
+        const u = JSON.parse(localStorage.getItem('vlxt_user_v2')||'null');
+        if(u) {
+          document.getElementById('student-name').value = u.hoten || '';
+          document.getElementById('student-class').value = u.lop || '';
+          document.getElementById('student-phone').value = u.sdt || u.email || '';
+          // Nếu đã có đủ thông tin, tự động bỏ qua form
+          if(u.hoten && (u.lop || u.email) && (u.sdt || u.email)) {
+            const studentName = u.hoten;
+            const studentClass = u.lop || 'Google';
+            const studentPhone = u.sdt || u.email;
+            window._autoAuth = { name: studentName, class: studentClass, phone: studentPhone };
+          }
+        }
+      } catch(e){}
+    })();
+
     function startQuiz(){
         const name=document.getElementById('student-name').value.trim();
         const sClass=document.getElementById('student-class').value.trim();
@@ -321,6 +340,16 @@
         document.getElementById('main-quiz-content').classList.remove('hidden');
         fetchQuestionsFromAdmin();
     }
+
+    // Nếu đã đăng nhập đủ thông tin thì tự động bắt đầu
+    window.addEventListener('DOMContentLoaded', function(){
+      if(window._autoAuth) {
+        studentData = window._autoAuth;
+        document.getElementById('auth-screen').classList.add('hidden');
+        document.getElementById('main-quiz-content').classList.remove('hidden');
+        fetchQuestionsFromAdmin();
+      }
+    });
 
     function fetchQuestionsFromAdmin(){
         document.getElementById('loading-text').classList.remove('hidden');

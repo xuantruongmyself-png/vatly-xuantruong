@@ -1055,6 +1055,18 @@ function showDiff(diff){
 /* ═══════════════════════════════════════════
    GAME FLOW
 ═══════════════════════════════════════════ */
+// Auto-fill gate form từ tài khoản đã đăng nhập
+document.addEventListener('DOMContentLoaded', function(){
+  try {
+    const u = JSON.parse(localStorage.getItem('vlxt_user_v2')||'null');
+    if(u) {
+      if(document.getElementById('g-name')) document.getElementById('g-name').value = u.hoten || '';
+      if(document.getElementById('g-class')) document.getElementById('g-class').value = u.lop || '';
+      if(document.getElementById('g-phone')) document.getElementById('g-phone').value = u.sdt || u.email || '';
+    }
+  } catch(e){}
+});
+
 async function startGame(){
   const name=document.getElementById('g-name').value.trim();
   const cls=document.getElementById('g-class').value.trim();

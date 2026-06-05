@@ -178,10 +178,9 @@ async function doLogin() {
   btn.disabled = true;
   btn.innerHTML = '<span class="spinner"></span>Đang đăng nhập...';
   try {
-    const fd = new FormData();
-    fd.append('action','login');
-    fd.append('data', JSON.stringify({ sdt, matkhau: pw }));
-    const r = await fetch(GAS, { method:'POST', body: fd, mode:'cors' });
+    const r = await fetch(GAS, { method:'POST', mode:'cors',
+      headers:{'Content-Type':'text/plain;charset=utf-8'},
+      body: JSON.stringify({ action:'login', sdt, matkhau: pw }) });
     const d = await r.json();
     if (d.ok) {
       localStorage.setItem('vlxt_user_v2', JSON.stringify(d.user));
@@ -210,10 +209,9 @@ async function doRegister() {
   btn.disabled = true;
   btn.innerHTML = '<span class="spinner"></span>Đang tạo tài khoản...';
   try {
-    const fd = new FormData();
-    fd.append('action','register');
-    fd.append('data', JSON.stringify({ hoten, lop, sdt, matkhau: pw }));
-    const r = await fetch(GAS, { method:'POST', body: fd, mode:'cors' });
+    const r = await fetch(GAS, { method:'POST', mode:'cors',
+      headers:{'Content-Type':'text/plain;charset=utf-8'},
+      body: JSON.stringify({ action:'register', hoten, lop, sdt, matkhau: pw }) });
     const d = await r.json();
     if (d.ok) {
       localStorage.setItem('vlxt_user_v2', JSON.stringify(d.user));
@@ -250,15 +248,10 @@ async function handleGoogleCredential(response) {
   if (!payload) return showMsg('login-msg','error','Lỗi xác thực Google.');
   // Gọi Apps Script để đăng ký/đăng nhập bằng Google
   try {
-    const fd = new FormData();
-    fd.append('action', 'loginGoogle');
-    fd.append('data', JSON.stringify({
-      hoten: payload.name,
-      email: payload.email,
-      avatar: payload.picture,
-      googleId: payload.sub
-    }));
-    const r = await fetch(GAS, { method:'POST', body: fd, mode:'cors' });
+    const r = await fetch(GAS, { method:'POST', mode:'cors',
+      headers:{'Content-Type':'text/plain;charset=utf-8'},
+      body: JSON.stringify({ action:'logingoogle', hoten: payload.name,
+        email: payload.email, avatar: payload.picture, googleId: payload.sub }) });
     const d = await r.json();
     if (d.ok) {
       localStorage.setItem('vlxt_user_v2', JSON.stringify(d.user));

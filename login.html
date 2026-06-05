@@ -103,7 +103,7 @@
     <button class="tab-btn" onclick="switchTab('register')">Đăng ký mới</button>
   </div>
   <div class="form-body">
-    <!-- GOOGLE SIGN-IN (dùng chung cả 2 tab) -->
+    <!-- GOOGLE SIGN-IN -->
     <div class="google-btn-wrap" id="google-btn-container"></div>
     <div class="or-divider"><span>hoặc dùng SĐT</span></div>
 
@@ -167,7 +167,7 @@ function showMsg(id, type, text) {
 
 function getRedirect() {
   const p = new URLSearchParams(location.search).get('from');
-  return p || 'index.html';
+  return p ? decodeURIComponent(p) : 'index.html';
 }
 
 async function doLogin() {
@@ -229,12 +229,50 @@ async function doRegister() {
   btn.textContent = 'Tạo tài khoản';
 }
 
-// Đã đăng nhập rồi → redirect thẳng
+// Kiểm tra xem có token trả về từ Redirect của Google hay không
+async function handleRedirectCallback() {
+  const hash = window.location.hash;
+  if (!hash) return;
+  const params = new URLSearchParams(hash.replace('#', '?'));
+  const credential = params.get('credential');
+  if (!credential) return;
+
+  const payload = decodeJWT(credential);
+  if (!payload) return showMsg('login-msg', 'error', 'Lỗi xác thực dữ liệu từ Google.');
+
+  try {
+    const fd = new FormData();
+    fd.append('action', 'loginGoogle');
+    fd.append('data', JSON.stringify({
+      hoten: payload.name,
+      email: payload.email,
+      avatar: payload.picture,
+      googleId: payload.sub
+    }));
+    const r = await fetch(GAS, { method: 'POST', body: fd, mode: 'cors' });
+    const d = await r.json();
+    if (d.ok) {
+      localStorage.setItem('vlxt_user_v2', JSON.stringify(d.user));
+      window.location.href = getRedirect();
+    } else {
+      showMsg('login-msg', 'error', d.msg || 'Lỗi xử lý tài khoản Google trên hệ thống.');
+    }
+  } catch(e) {
+    const user = { hoten: payload.name, lop: 'Google', sdt: payload.email, email: payload.email, avatar: payload.picture, lpTotal: 0 };
+    localStorage.setItem('vlxt_user_v2', JSON.stringify(user));
+    window.location.href = getRedirect();
+  }
+}
+
 const _u = (() => { try { return JSON.parse(localStorage.getItem('vlxt_user_v2')||'null'); } catch { return null; } })();
-if (_u) window.location.href = getRedirect();
+if (_u) {
+  window.location.href = getRedirect();
+} else {
+  handleRedirectCallback();
+}
 
 // ──────────────────────────────────
-// GOOGLE SIGN-IN
+// GOOGLE SIGN-IN (CHUYỂN SANG REDIRECT MODE)
 // ──────────────────────────────────
 const GOOGLE_CLIENT_ID = '1022891995284-miquu1f7rlpie7ug9884sgagf21nputc.apps.googleusercontent.com';
 
@@ -245,53 +283,20 @@ function decodeJWT(token) {
   } catch(e) { return null; }
 }
 
-async function handleGoogleCredential(response) {
-  const payload = decodeJWT(response.credential);
-  if (!payload) return showMsg('login-msg','error','Lỗi xác thực Google.');
-  // Gọi Apps Script để đăng ký/đăng nhập bằng Google
-  try {
-    const fd = new FormData();
-    fd.append('action', 'loginGoogle');
-    fd.append('data', JSON.stringify({
-      hoten: payload.name,
-      email: payload.email,
-      avatar: payload.picture,
-      googleId: payload.sub
-    }));
-    const r = await fetch(GAS, { method:'POST', body: fd, mode:'cors' });
-    const d = await r.json();
-    if (d.ok) {
-      localStorage.setItem('vlxt_user_v2', JSON.stringify(d.user));
-      window.location.href = getRedirect();
-    } else {
-      showMsg('login-msg','error', d.msg || 'Lỗi đăng nhập Google.');
-    }
-  } catch(e) {
-    // Fallback: lưu trực tiếp không qua Sheets
-    const user = { hoten: payload.name, lop: 'Google', sdt: payload.email, email: payload.email, avatar: payload.picture, lpTotal: 0 };
-    localStorage.setItem('vlxt_user_v2', JSON.stringify(user));
-    window.location.href = getRedirect();
-  }
-}
-
-// Khởi tạo Google Sign-In sau khi thư viện load
-// Google GSI gọi hàm này tự động khi thư viện load xong
 function onGoogleLibraryLoad() {
   google.accounts.id.initialize({
     client_id: GOOGLE_CLIENT_ID,
-    callback: handleGoogleCredential,
+    ux_mode: 'redirect', // Chuyển từ Popup sang Redirect để tránh lỗi COOP trên trình duyệt
+    login_uri: window.location.origin + window.location.pathname + window.location.search,
     auto_select: false,
-    cancel_on_tap_outside: true,
     use_fedcm_for_prompt: false
   });
   google.accounts.id.renderButton(
     document.getElementById('google-btn-container'),
     { theme: 'filled_blue', size: 'large', width: 372, text: 'signin_with', shape: 'rectangular', logo_alignment: 'left' }
   );
-  // Bỏ google.accounts.id.prompt() vì gây lỗi COOP trên GitHub Pages
 }
 
-// Fallback: nếu script đã load trước khi hàm này được định nghĩa
 if (typeof google !== 'undefined' && google.accounts) {
   onGoogleLibraryLoad();
 }

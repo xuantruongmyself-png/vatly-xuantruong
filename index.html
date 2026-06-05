@@ -425,15 +425,6 @@
         }
     </style>
   <script src="auth.js"></script>
-  <script>
-    (function(){
-      var u = null;
-      try { u = JSON.parse(localStorage.getItem('vlxt_user_v2')||'null'); } catch(e){}
-      if (!u) {
-        window.location.replace('login.html?from=' + encodeURIComponent(location.pathname + location.search));
-      }
-    })();
-  </script>
 </head>
 <body>
 
@@ -465,8 +456,25 @@
     <div class="nav-right">
         <a href="danhsach-ly12.html">Đề thi</a>
         <a href="danhsach-ly12.html" class="nav-btn">Thi Thử Ngay</a>
+        <!-- Auth widget — hiện nút login nếu chưa đăng nhập, avatar nếu đã đăng nhập -->
+        <div id="nav-auth-area" style="margin-left:8px;"></div>
     </div>
 </nav>
+<script>
+(function(){
+  var u = null;
+  try { u = JSON.parse(localStorage.getItem('vlxt_user_v2')||'null'); } catch(e){}
+  var area = document.getElementById('nav-auth-area');
+  if (!area) return;
+  if (u) {
+    // Đã đăng nhập — hiện widget
+    vlxtRenderWidget(u);
+  } else {
+    // Chưa đăng nhập — hiện nút
+    area.innerHTML = '<a href="login.html" style="display:inline-flex;align-items:center;gap:6px;padding:8px 18px;background:linear-gradient(135deg,#0072ff,#00c6ff);color:#fff;border-radius:10px;font-weight:700;font-size:14px;text-decoration:none;box-shadow:0 4px 14px rgba(0,114,255,0.35);transition:all 0.2s">👤 Đăng nhập</a>';
+  }
+})();
+</script>
 
 <!-- ─── HERO ─── -->
 <div class="hero">
@@ -728,15 +736,4 @@
                 </div>
                 <div class="panel-card-row">
                     <span class="row-left">Thứ Hai · 19:30</span>
-                    <span class="row-badge">Chữa đề thực chiến 12</span>
-                </div>
-                <div class="panel-card-row">
-                    <span class="row-left">Thứ Tư · 19:30</span>
-                    <span class="row-badge">Bổ trợ chuyên đề Lý 11</span>
-                </div>
-                <div class="panel-card-row">
-                    <span class="row-left">Thứ Sáu · 19:30</span>
-                    <span class="row-badge">Lấy gốc thần tốc Lý 10</span>
-                </div>
-                <div class="panel-card-row">
-                    <span class="row-left">Chủ Nh�
+                    <span class="row-badge">Chữa đề thực chiến 12

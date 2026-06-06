@@ -307,6 +307,8 @@ function field(row,names){ for(const k in row){ const nk=norm(k); for(const n of
 function toast(msg,type){ const t=$('#toast'); t.className='toast show '+(type||''); t.innerHTML=msg; clearTimeout(t._t); t._t=setTimeout(()=>t.className='toast',2600); }
 function renderMath(el){ if(typeof renderMathInElement==='function'){ try{ renderMathInElement(el,{delimiters:[{left:'$$',right:'$$',display:true},{left:'$',right:'$',display:false}]}); }catch(e){} } }
 function ytId(url){ if(!url) return ''; url=url.toString().trim(); if(/^[A-Za-z0-9_-]{11}$/.test(url)) return url; const m=url.match(/(?:youtu\.be\/|v=|embed\/|shorts\/)([A-Za-z0-9_-]{11})/); return m?m[1]:''; }
+function driveId(url){ if(!url) return ''; const m=url.toString().trim().match(/\/file\/d\/([^\/\?&]+)/); return m?m[1]:''; }
+function videoType(url){ if(!url) return 'none'; if(ytId(url)) return 'youtube'; if(driveId(url)) return 'drive'; return 'none'; }
 function daysAgo(d){ if(!d) return 9999; const p=parseVND(d); if(!p) return 9999; return Math.floor((Date.now()-p)/86400000); }
 function parseVND(s){ s=(s||'').toString().trim(); if(!s) return null; const m=s.match(/^(\d{1,2})[\/\-.](\d{1,2})[\/\-.](\d{2,4})$/); if(m){ let y=+m[3]; if(y<100)y+=2000; return new Date(y,(+m[2])-1,+m[1]).getTime(); } const d=new Date(s); return isNaN(d)?null:d.getTime(); }
 
@@ -551,13 +553,15 @@ function renderLesson(key){
     const {course,chapter,lesson}=info;
     const flat=flatLessons(course); const idx=flat.findIndex(l=>l.key===key);
     const prev=idx>0?flat[idx-1]:null, next=idx<flat.length-1?flat[idx+1]:null;
-    const vid=ytId(lesson.video); const done=WATCHED.has(key);
+    const vid=ytId(lesson.video); const did=driveId(lesson.video); const vtype=videoType(lesson.video); const done=WATCHED.has(key);
     const pct=coursePct(course), w=courseWatched(course);
 
-    // Video player — dùng YT IFrame API để track tiến độ
-    const videoHtml=vid
-        ?`<div class="ratio"><div id="yt-player"></div></div>`
-        :`<div class="ratio"><div class="no-video"><i class="fa-brands fa-youtube" style="font-size:40px;opacity:.4"></i><div style="font-size:14px;margin-top:8px">Video sẽ được thêm sớm</div></div></div>`;
+    // Video player — YouTube IFrame API hoặc Google Drive embed
+    const videoHtml = vtype==='youtube'
+        ? `<div class="ratio"><div id="yt-player"></div></div>`
+        : vtype==='drive'
+        ? `<div class="ratio"><iframe id="drive-player" src="https://drive.google.com/file/d/${did}/preview" allow="autoplay; encrypted-media" allowfullscreen style="border:0;width:100%;height:100%;position:absolute;inset:0"></iframe></div>`
+        : `<div class="ratio"><div class="no-video"><i class="fa-brands fa-youtube" style="font-size:40px;opacity:.4"></i><div style="font-size:14px;margin-top:8px">Video sẽ được thêm sớm</div></div></div>`;
 
     // ── Sidebar: toàn bộ khóa học ──
     let side=`<div class="side-list">
@@ -629,8 +633,11 @@ function renderLesson(key){
     // ── Video chữa bài ──
     let solutionHtml='';
     if(lesson.videogiai){
-        const svid=ytId(lesson.videogiai);
-        if(svid){
+        const svid=ytId(lesson.videogiai); const sdid=driveId(lesson.videogiai);
+        if(svid||sdid){
+            const sEmbed=svid
+                ?`<iframe src="https://www.youtube-nocookie.com/embed/${svid}?rel=0" allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture" allowfullscreen></iframe>`
+                :`<iframe src="https://drive.google.com/file/d/${sdid}/preview" allow="autoplay; encrypted-media" allowfullscreen style="border:0;width:100%;height:100%;position:absolute;inset:0"></iframe>`;
             solutionHtml=`<div class="section-block">
                 <div class="section-block-head">
                     <div class="s-icon s-icon-green"><i class="fa-solid fa-lightbulb"></i></div>
@@ -641,7 +648,7 @@ function renderLesson(key){
                 </div>
                 <div class="section-block-body">
                     <div class="video-box solution-video">
-                        <div class="ratio"><iframe src="https://www.youtube-nocookie.com/embed/${svid}?rel=0" allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture" allowfullscreen></iframe></div>
+                        <div class="ratio">${sEmbed}</div>
                     </div>
                 </div>
             </div>`;
@@ -684,8 +691,9 @@ function renderLesson(key){
             <div class="lesson-sidebar">${side}</div>
         </div>`;
     renderMath(app());
-    // Khởi động YouTube IFrame API tracking
-    if(vid) initYTPlayer(vid, key);
+    // Khởi động player theo loại video
+    if(vtype==='youtube') initYTPlayer(vid, key);
+    else if(vtype==='drive') initDrivePlayer(did, key);
 }
 
 /* ═══════════════════════════════════════════
@@ -707,6 +715,25 @@ if(!window._ytApiLoaded){
 window.onYouTubeIframeAPIReady = function(){
     if(window._ytPendingInit){ window._ytPendingInit(); window._ytPendingInit = null; }
 };
+
+/* ── Google Drive video — auto-mark sau 3 phút ── */
+let _driveTimer = null;
+function initDrivePlayer(did, key){
+    if(_driveTimer){ clearTimeout(_driveTimer); _driveTimer = null; }
+    if(WATCHED.has(key)){ // đã xem rồi → cập nhật UI
+        const b = document.getElementById('done-btn');
+        if(b){ b.classList.add('is-done'); b.innerHTML='<i class="fa-solid fa-circle-check"></i> Đã hoàn thành'; }
+        return;
+    }
+    // Sau 3 phút tự đánh dấu hoàn thành (Drive không có API tracking)
+    _driveTimer = setTimeout(function(){
+        markWatched(key);
+        const b = document.getElementById('done-btn');
+        if(b){ b.classList.add('is-done'); b.innerHTML='<i class="fa-solid fa-circle-check"></i> Đã hoàn thành'; }
+        document.querySelectorAll('.side-item.active .si-ic i').forEach(i=>i.className='fa-solid fa-circle-check');
+        document.querySelectorAll('.side-item.active').forEach(s=>s.classList.add('done'));
+    }, 3 * 60 * 1000); // 3 phút
+}
 
 function initYTPlayer(vid, key){
     _ytCurrentKey = key;
@@ -925,26 +952,4 @@ const DEMO_ROWS = [
 
     // ── Chương 4: Hạt nhân nguyên tử ──
     {KhoaHoc:'Vật Lý 12', Chuong:'Chương 4 — Hạt nhân nguyên tử', TenBai:'Bài 1: Cấu tạo hạt nhân — Đồng vị',
-     Video:'', VideoGiai:'', BaiTap:JSON.stringify(Q_C4B1), MoTaBai:'Hạt nhân ${}^A_ZX$ có Z proton, (A−Z) neutron. Đồng vị có cùng Z, khác A.', NgayDang:'22/05/2026'},
-    {KhoaHoc:'Vật Lý 12', Chuong:'Chương 4 — Hạt nhân nguyên tử', TenBai:'Bài 2: Phóng xạ — Chu kì bán rã',
-     Video:'', VideoGiai:'', BaiTap:JSON.stringify(Q_C4B2), MoTaBai:'Phóng xạ $\\alpha,\\,\\beta^-,\\,\\beta^+,\\,\\gamma$. Định luật phân rã: $N = N_0 \\cdot 2^{-t/T}$.', NgayDang:'24/05/2026'},
-    {KhoaHoc:'Vật Lý 12', Chuong:'Chương 4 — Hạt nhân nguyên tử', TenBai:'Bài 3: Năng lượng liên kết — Phản ứng hạt nhân',
-     Video:'', VideoGiai:'', BaiTap:JSON.stringify(Q_C4B3), MoTaBai:'Độ hụt khối $\\Delta m$. Năng lượng liên kết: $E_{lk} = \\Delta m \\cdot c^2$.', NgayDang:'26/05/2026'},
-    {KhoaHoc:'Vật Lý 12', Chuong:'Chương 4 — Hạt nhân nguyên tử', TenBai:'Bài 4: Phân hạch · Nhiệt hạch · Ứng dụng',
-     Video:'', VideoGiai:'', BaiTap:'', MoTaBai:'Lò phản ứng hạt nhân. Bom nguyên tử và bom nhiệt hạch. Năng lượng tái tạo từ hạt nhân.', NgayDang:'28/05/2026'},
-
-    // ═══ VẬT LÝ 11 (placeholder) ═══
-    {KhoaHoc:'Vật Lý 11', MoTaKhoa:'Điện học & Từ học lớp 11 — Đang xây dựng nội dung.', AnhKhoa:'🔌',
-     Chuong:'Chương 1 — Điện trường', TenBai:'Bài 1: Điện tích — Định luật Coulomb',
-     Video:'', VideoGiai:'', BaiTap:'', MoTaBai:'$F = k\\dfrac{|q_1 q_2|}{r^2}$. Hằng số điện: $k = 9\\times10^9$ N·m²/C².', NgayDang:'01/04/2026'},
-
-    // ═══ VẬT LÝ 10 (placeholder) ═══
-    {KhoaHoc:'Vật Lý 10', MoTaKhoa:'Cơ học & Nhiệt học lớp 10 — Đang xây dựng nội dung.', AnhKhoa:'🚀',
-     Chuong:'Chương 1 — Động học', TenBai:'Bài 1: Chuyển động thẳng đều',
-     Video:'', VideoGiai:'', BaiTap:'', MoTaBai:'Vận tốc trung bình: $v = s/t$. Phương trình: $x = x_0 + vt$.', NgayDang:'01/04/2026'},
-];
-
-window.addEventListener('DOMContentLoaded', init);
-</script>
-</body>
-</html>
+     Video:'', VideoGiai:'', BaiTap:JSON.stringify(Q_C4B1), MoTaBai:'Hạt nhân ${}^A_ZX$ có Z proton, (A−Z) neutron. Đồn

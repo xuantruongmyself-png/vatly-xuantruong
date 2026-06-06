@@ -17,7 +17,8 @@ function doGet(e) {
     if (type === 'baihoc')    return getBaiHoc();
     if (type === 'diemthi')   return getDiemThi();
     if (type === 'tiendo')    return getTienDo(hs);
-    if (type === 'profile')   return getProfile(hs);
+    if (type === 'profile')     return getProfile(hs);
+    if (type === 'leaderboard') return getLeaderboard();
     return getExamQuestions();
   } catch(err) {
     return jsonOut({ error: err.message });
@@ -173,6 +174,26 @@ function getProfile(sdt) {
   return jsonOut({ ok: true, user, scores, tiendo });
 }
 
+// ── GET: Bảng xếp hạng ───────────────────────────────────────
+
+function getLeaderboard() {
+  const acc  = getOrCreate('TaiKhoan', ['sdt','hoten','lop','matkhau','ngayDK','lpTotal','diemGame']);
+  const rows = acc.getDataRange().getValues();
+  const list = [];
+  for (let i = 1; i < rows.length; i++) {
+    if (rows[i][0]) {
+      list.push({
+        hoten:   rows[i][1] || '---',
+        lop:     rows[i][2] || '---',
+        lpTotal: Number(rows[i][5]) || 0,
+        diemGame: Number(rows[i][6]) || 0
+      });
+    }
+  }
+  list.sort((a, b) => b.lpTotal - a.lpTotal);
+  return jsonOut({ ok: true, data: list.slice(0, 50) });
+}
+
 // ── GET: Bài học ──────────────────────────────────────────────
 
 function getBaiHoc() {
@@ -256,4 +277,14 @@ function saveProgress(data) {
 
 // ── POST: Quản lý bài học (Admin) ─────────────────────────────
 
-f
+function saveBaiHoc(data) {
+  const sheet = getOrCreate('BaiHoc', ['KhoaHoc','Chuong','TenBai','Video','VideoGiai','MoTaBai','NgayDang','BaiTap']);
+  if (data.rowIndex) {
+    sheet.getRange(data.rowIndex, 1, 1, 8).setValues([[
+      data.KhoaHoc||'', data.Chuong||'', data.TenBai||'', data.Video||'',
+      data.VideoGiai||'', data.MoTaBai||'', data.NgayDang||new Date().toISOString(), data.BaiTap||''
+    ]]);
+  } else {
+    sheet.appendRow([
+      data.KhoaHoc||'', data.Chuong||'', data.TenBai||'', data.Video||'',
+      data.VideoGiai||'', data.MoTaBai||'', data.NgayDang||new Date().toISOString(), data.B

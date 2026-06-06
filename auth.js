@@ -99,6 +99,7 @@ function vlxtRenderWidget(user) {
         <a href="baihoc.html" class="vlxt-nav-link">📚 Bài học</a>
         <a href="danhsach-ly12.html" class="vlxt-nav-link">📝 Đề thi</a>
         <a href="trochoi.html" class="vlxt-nav-link">🎮 Trò chơi</a>
+        <a href="hoso.html" class="vlxt-nav-link">👤 Hồ sơ & Xếp hạng</a>
       </div>
       <hr class="vlxt-divider">
       <button class="vlxt-logout-btn" onclick="vlxtLogout()">↩ Đăng xuất</button>
@@ -128,7 +129,4 @@ function vlxtToggleDropdown() {
 document.addEventListener('click', e => {
   const w = document.getElementById('vlxt-user-widget');
   if (w && !w.contains(e.target)) {
-    const dd = document.getElementById('vlxt-dropdown');
-    if (dd) dd.classList.remove('open');
-  }
-});
+    const dd = document

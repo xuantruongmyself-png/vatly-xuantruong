@@ -130,6 +130,11 @@
   <div class="form-body">
     <!-- GOOGLE SIGN-IN (dùng chung cả 2 tab) -->
     <div class="google-btn-wrap" id="google-btn-container"></div>
+    <div style="text-align:center;margin:-4px 0 8px;">
+      <a href="#" onclick="switchGoogleAccount(event)" style="font-size:12px;color:#aaa;text-decoration:underline;text-underline-offset:3px;">
+        🔄 Dùng tài khoản Google khác
+      </a>
+    </div>
     <div class="or-divider"><span>hoặc dùng SĐT</span></div>
 
     <!-- LOGIN -->
@@ -326,6 +331,31 @@ async function confirmSetup() {
 
 // Khởi tạo Google Sign-In sau khi thư viện load
 // Google GSI gọi hàm này tự động khi thư viện load xong
+function switchGoogleAccount(e) {
+  e.preventDefault();
+  try {
+    // Xóa trạng thái auto-select hiện tại
+    google.accounts.id.disableAutoSelect();
+    // Xóa container và render lại button không có account hint
+    const container = document.getElementById('google-btn-container');
+    container.innerHTML = '';
+    google.accounts.id.initialize({
+      client_id: GOOGLE_CLIENT_ID,
+      callback: handleGoogleCredential,
+      auto_select: false,
+      cancel_on_tap_outside: true,
+      hint: '',
+      use_fedcm_for_prompt: false
+    });
+    google.accounts.id.renderButton(container,
+      { theme:'filled_blue', size:'large', width:372, text:'signin_with', shape:'rectangular', logo_alignment:'left' }
+    );
+  } catch(err) {
+    // Fallback: mở trang chọn tài khoản Google
+    window.open('https://accounts.google.com/accountchooser', '_blank');
+  }
+}
+
 function onGoogleLibraryLoad() {
   google.accounts.id.initialize({
     client_id: GOOGLE_CLIENT_ID,

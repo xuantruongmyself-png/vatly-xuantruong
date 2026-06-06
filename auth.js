@@ -1,9 +1,9 @@
-/* ═════════════════════════════════════════════
+/* ═══════════════════════════════════════════
    AUTH MODULE — Vật Lý Xuân Trường
    Dùng chung cho tất cả các trang
-═════════════════════════════════════════════ */
+═══════════════════════════════════════════ */
 const VLXT_AUTH_KEY = 'vlxt_user_v2';
-const VLXT_GAS = 'https://script.google.com/macros/s/AKfycbzxn5Zue4GdGMTnZuts_sNRc2X-BWulWCwKe8fdwJd6PyBbn7pOqxDBG4alOuk96is5/exec';
+const VLXT_GAS = 'https://script.google.com/macros/s/AKfycbxJ8HMtU0d8PNGo9cPCat4GMGsd8FyXU_tKPyFot0EHStitH2Eyaefz8V39x9aeo2B_/exec';
 
 function vlxtGetUser() {
   try { return JSON.parse(localStorage.getItem(VLXT_AUTH_KEY) || 'null'); } catch { return null; }
@@ -99,7 +99,7 @@ function vlxtRenderWidget(user) {
         <a href="baihoc.html" class="vlxt-nav-link">📚 Bài học</a>
         <a href="danhsach-ly12.html" class="vlxt-nav-link">📝 Đề thi</a>
         <a href="trochoi.html" class="vlxt-nav-link">🎮 Trò chơi</a>
-        <a href="hoso.html" class="vlxt-nav-link">👤 Hồ sơ &amp; Xếp hạng</a>
+        <a href="hoso.html" class="vlxt-nav-link">👤 Hồ sơ & Xếp hạng</a>
       </div>
       <hr class="vlxt-divider">
       <button class="vlxt-logout-btn" onclick="vlxtLogout()">↩ Đăng xuất</button>

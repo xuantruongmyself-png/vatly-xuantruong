@@ -14,11 +14,12 @@ function doGet(e) {
   const type = (e.parameter.type || '').toLowerCase();
   const hs   = e.parameter.hs || '';
   try {
-    if (type === 'baihoc')    return getBaiHoc();
-    if (type === 'diemthi')   return getDiemThi();
-    if (type === 'tiendo')    return getTienDo(hs);
-    if (type === 'profile')     return getProfile(hs);
-    if (type === 'leaderboard') return getLeaderboard();
+    if (type === 'baihoc')          return getBaiHoc();
+    if (type === 'diemthi')         return getDiemThi();
+    if (type === 'tiendo')          return getTienDo(hs);
+    if (type === 'profile')         return getProfile(hs);
+    if (type === 'leaderboard')     return getLeaderboard();
+    if (type === 'sourcevideolinks') return getSourceVideoLinks();
     return getExamQuestions();
   } catch(err) {
     return jsonOut({ error: err.message });
@@ -34,9 +35,10 @@ function doPost(e) {
     if (action === 'logingoogle')   return loginGoogle(data);
     if (action === 'savebaihoc')    return saveBaiHoc(data);
     if (action === 'deletebaihoc')  return deleteBaiHoc(data);
-    if (action === 'savequestions') return saveQuestions(data);
-    if (action === 'saveprogress')  return saveProgress(data);
-    if (action === 'savescore')     return saveScore(data);
+    if (action === 'savequestions')     return saveQuestions(data);
+    if (action === 'saveprogress')      return saveProgress(data);
+    if (action === 'savescore')         return saveScore(data);
+    if (action === 'updatebaihocvideo') return updateBaiHocVideo(data);
     return saveScore(data);
   } catch(err) {
     return jsonOut({ error: err.message });
@@ -287,4 +289,94 @@ function saveBaiHoc(data) {
   } else {
     sheet.appendRow([
       data.KhoaHoc||'', data.Chuong||'', data.TenBai||'', data.Video||'',
-      data.VideoGiai||'', data.MoTaBai||'', data.NgayDang||new Date().toISOString(), data.B
+      data.VideoGiai||'', data.MoTaBai||'', data.NgayDang||new Date().toISOString(), data.BaiTap||''
+    ]);
+  }
+  return jsonOut({ ok: true });
+}
+
+function deleteBaiHoc(data) {
+  const sheet = getOrCreate('BaiHoc', ['KhoaHoc','Chuong','TenBai','Video','VideoGiai','MoTaBai','NgayDang','BaiTap']);
+  if (data.rowIndex) sheet.deleteRow(data.rowIndex);
+  return jsonOut({ ok: true });
+}
+
+// ── GET: Lấy link video từ Sheet nguồn (khoá luyện đề 2k8) ──
+function getSourceVideoLinks() {
+  try {
+    const src   = SpreadsheetApp.openById('1D1nNyP8UAllr2SYoHDF9bBWz2dQx12h_8qsF-2jZwGg');
+    const sheet = src.getSheets()[0]; // Tab đầu tiên
+    const range = sheet.getDataRange();
+    const values    = range.getValues();
+    const richTexts = range.getRichTextValues();
+
+    const result = [];
+    for (let i = 1; i < values.length; i++) {
+      const tenBai = String(values[i][4] || '').trim(); // Cột E: Chủ Đề Chi Tiết
+      const chuong = String(values[i][3] || '').trim(); // Cột D: Nội dung buổi học
+      if (!tenBai) continue;
+
+      // Cột H (index 7): Link video recording
+      const urls = [];
+      const rt = richTexts[i][7];
+      if (rt) {
+        // Lấy URL chính của cell
+        const mainUrl = rt.getLinkUrl ? rt.getLinkUrl() : '';
+        if (mainUrl) urls.push(mainUrl);
+        // Nếu cell có nhiều đoạn (Phần 1, Phần 2...)
+        if (rt.getRuns) {
+          rt.getRuns().forEach(run => {
+            const u = run.getLinkUrl ? run.getLinkUrl() : '';
+            if (u && !urls.includes(u)) urls.push(u);
+          });
+        }
+      }
+      // Fallback: text thuần
+      if (!urls.length) {
+        const txt = String(values[i][7] || '').trim();
+        if (txt.startsWith('http')) urls.push(txt);
+      }
+
+      result.push({
+        stt:      values[i][0],
+        chuong,
+        tenBai,
+        videoUrl: urls[0] || '',       // URL đầu tiên → trường Video
+        videoUrl2: urls[1] || '',      // URL thứ hai → trường VideoGiai (nếu có)
+        allUrls:  urls
+      });
+    }
+    return jsonOut({ ok: true, data: result });
+  } catch(err) {
+    return jsonOut({ ok: false, error: err.message });
+  }
+}
+
+// ── POST: Cập nhật link video cho bài học trong BaiHoc ───────
+function updateBaiHocVideo(data) {
+  const sheet = getOrCreate('BaiHoc', ['KhoaHoc','Chuong','TenBai','Video','VideoGiai','MoTaBai','NgayDang','BaiTap']);
+  const rows  = sheet.getDataRange().getValues();
+  let updated = 0;
+
+  (data.links || []).forEach(link => {
+    const name = String(link.tenBai || '').trim();
+    for (let i = 1; i < rows.length; i++) {
+      if (String(rows[i][2]).trim() === name) {
+        sheet.getRange(i + 1, 4).setValue(link.videoUrl  || ''); // Video
+        sheet.getRange(i + 1, 5).setValue(link.videoUrl2 || ''); // VideoGiai
+        updated++;
+        break;
+      }
+    }
+  });
+  return jsonOut({ ok: true, updated });
+}
+
+function saveQuestions(data) {
+  const sheet = getOrCreate('NganHangDe', ['id','type','question','optA','optB','optC','optD','correct']);
+  if (data.clearFirst) { const last = sheet.getLastRow(); if (last > 1) sheet.deleteRows(2, last-1); }
+  (data.questions || []).forEach(q => {
+    sheet.appendRow([q.id||'', q.type||'mc', q.question||'', q.optA||'', q.optB||'', q.optC||'', q.optD||'', q.correct||'']);
+  });
+  return jsonOut({ ok: true, count: (data.questions||[]).length });
+}

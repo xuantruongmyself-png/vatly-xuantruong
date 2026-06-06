@@ -323,7 +323,7 @@ async function confirmSetup() {
   try {
     await fetch(GAS, { method:'POST', mode:'cors',
       headers:{'Content-Type':'text/plain;charset=utf-8'},
-      body: JSON.stringify({ action:'logingoogle', hoten, email: user.email||user.sdt,
+      body: JSON.stringify({ action:'logingoogle', hoten, lop, email: user.email||user.sdt,
         avatar: user.avatar||'', googleId: '' }) });
   } catch(e) {}
   window.location.href = getRedirect();

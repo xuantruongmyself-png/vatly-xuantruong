@@ -313,7 +313,18 @@ function parseVND(s){ s=(s||'').toString().trim(); if(!s) return null; const m=s
 /* ═══════════════════════════════════════════
    DANH TÍNH HỌC SINH
 ═══════════════════════════════════════════ */
-function loadIdentity(){ try{ HS=JSON.parse(localStorage.getItem(LS_HS)||'null'); }catch(e){ HS=null; } }
+function loadIdentity(){
+    try{
+        // Ưu tiên dùng tài khoản đã đăng nhập (vlxt_user_v2)
+        const auth = JSON.parse(localStorage.getItem('vlxt_user_v2')||'null');
+        if(auth && auth.hoten){
+            HS = { ten: auth.hoten, lop: auth.lop || '', sdt: auth.sdt || '' };
+            localStorage.setItem(LS_HS, JSON.stringify(HS));
+            return;
+        }
+        HS=JSON.parse(localStorage.getItem(LS_HS)||'null');
+    }catch(e){ HS=null; }
+}
 function saveIdentity(){
     const ten=$('#g-name').value.trim(), lop=$('#g-class').value.trim(), sdt=$('#g-phone').value.trim();
     if(!ten||!lop||!sdt){ $('#g-err').textContent='Vui lòng điền đầy đủ thông tin nhé!'; return; }
@@ -927,7 +938,4 @@ const DEMO_ROWS = [
      Chuong:'Chương 1 — Điện trường', TenBai:'Bài 1: Điện tích — Định luật Coulomb',
      Video:'', VideoGiai:'', BaiTap:'', MoTaBai:'$F = k\\dfrac{|q_1 q_2|}{r^2}$. Hằng số điện: $k = 9\\times10^9$ N·m²/C².', NgayDang:'01/04/2026'},
 
-    // ═══ VẬT LÝ 10 (placeholder) ═══
-    {KhoaHoc:'Vật Lý 10', MoTaKhoa:'Cơ học & Nhiệt học lớp 10 — Đang xây dựng nội dung.', AnhKhoa:'🚀',
-     Chuong:'Chương 1 — Động học', TenBai:'Bài 1: Chuyển động thẳng đều',
-     Video:'', VideoGiai:'', BaiTap:'', MoTaBai:'Vận tốc trung bình: $v = s/t$. Phương trình: $x = x_0 
+    // ══

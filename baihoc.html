@@ -219,6 +219,12 @@
 
         footer { text-align:center; color:var(--sub); font-size:13px; padding:40px 18px 50px; margin-top:30px; border-top:1.5px solid var(--line); }
 
+        /* ═══ SUBJECT GROUPS ═══ */
+        .subject-section { margin-bottom:32px; }
+        .subject-label { display:flex; align-items:center; gap:10px; margin-bottom:14px; padding-bottom:10px; border-bottom:2px solid var(--line); }
+        .subject-label h2 { font-size:19px; font-weight:800; letter-spacing:-.02em; }
+        .subject-label .subj-pill { font-size:12px; font-weight:700; background:rgba(11,132,243,.1); color:var(--blue); border-radius:20px; padding:3px 12px; }
+
         @media(max-width:900px) { .player-layout { grid-template-columns:1fr; } .lesson-sidebar { position:static; } .side-list { max-height:400px; } }
         @media(max-width:560px) { header { padding:12px 16px; } .nav a span,.nav button span { display:none; } }
     </style>
@@ -294,6 +300,7 @@ let HS = null;
 let COURSES = [];
 let WATCHED = new Set();
 let USING_DEMO = false;
+let GROUPS = new Map(); // group name → [course, ...]
 
 /* ═══════════════════════════════════════════
    TIỆN ÍCH
@@ -382,8 +389,9 @@ function buildCourses(rows){
         const cname=field(row,['khoahoc','khoa','course','mon']).toString().trim();
         const chname=(field(row,['chuong','chapter','phan'])||'Nội dung').toString().trim();
         const lname=field(row,['tenbai','bai','baihoc','tieude','title','ten']).toString().trim();
+        const gname=field(row,['nhomkhoa','nhom','group','lophoc']).toString().trim();
         if(!cname||!lname) return;
-        if(!cmap.has(cname)) cmap.set(cname,{name:cname, desc:field(row,['motakhoa','mieutakhoa','desckhoa','mota']).toString().trim(), img:field(row,['anhkhoa','anh','thumb','hinh','icon','emoji']).toString().trim(), order:idx, chMap:new Map()});
+        if(!cmap.has(cname)) cmap.set(cname,{name:cname, desc:field(row,['motakhoa','mieutakhoa','desckhoa','mota']).toString().trim(), img:field(row,['anhkhoa','anh','thumb','hinh','icon','emoji']).toString().trim(), order:idx, group:gname, chMap:new Map()});
         const c=cmap.get(cname);
         if(!c.desc){ const d=field(row,['motakhoa','mieutakhoa','desckhoa']).toString().trim(); if(d)c.desc=d; }
         if(!c.img){ const im=field(row,['anhkhoa','anh','thumb','hinh','icon','emoji']).toString().trim(); if(im)c.img=im; }
@@ -406,7 +414,7 @@ function buildCourses(rows){
     return [...cmap.values()].map(c=>{
         const chapters=[...c.chMap.values()];
         const total=chapters.reduce((s,ch)=>s+ch.lessons.length,0);
-        return {name:c.name,desc:c.desc,img:c.img,order:c.order,chapters,total};
+        return {name:c.name,desc:c.desc,img:c.img,order:c.order,group:c.group||'',chapters,total};
     });
 }
 
@@ -475,21 +483,15 @@ function renderHome(){
         </div>`;
     if(!list.length){ h+=`<div class="empty"><i class="fa-solid fa-box-open"></i><p>${homeState.tab==='mine'?'Em chưa bắt đầu khóa nào. Hãy chọn một khóa để học!':'Chưa có khóa học nào.'}</p></div>`; }
     else{
-        h+='<div class="grid">';
-        list.forEach(c=>{
-            const pct=coursePct(c),w=courseWatched(c),nw=courseNew(c);
-            const thumb=c.img&&/^https?:|^data:/.test(c.img)?`<img src="${esc(c.img)}" alt="">`:`<span>${c.img||'📘'}</span>`;
-            h+=`<div class="course-card" onclick="go('#course/${encodeURIComponent(c.name)}')">
-                <div class="cc-thumb">${thumb}${nw?`<span class="cc-new">${nw} bài mới</span>`:''}</div>
-                <div class="cc-body">
-                    <div class="cc-title">${esc(c.name)}</div>
-                    <div class="cc-desc">${esc(c.desc||'Khóa học Vật lý — học cùng thầy Trường.')}</div>
-                    <div class="cc-meta"><span>${c.chapters.length} chương · ${c.total} bài giảng</span><b>${pct}%</b></div>
-                    <div class="bar"><i style="width:${pct}%"></i></div>
-                    <div class="cc-btn"><i class="fa-solid fa-play"></i> ${w>0?'Tiếp tục học':'Bắt đầu học'}</div>
-                </div></div>`;
+        const ccHTML=c=>{ const pct=coursePct(c),w=courseWatched(c),nw=courseNew(c); const thumb=c.img&&/^https?:|^data:/.test(c.img)?`<img src="${esc(c.img)}" alt="">`:`<span>${c.img||'📘'}</span>`; return `<div class="course-card" onclick="go('#course/${encodeURIComponent(c.name)}')"><div class="cc-thumb">${thumb}${nw?`<span class="cc-new">${nw} bài mới</span>`:''}</div><div class="cc-body"><div class="cc-title">${esc(c.name)}</div><div class="cc-desc">${esc(c.desc||'Khóa học Vật lý — học cùng thầy Trường.')}</div><div class="cc-meta"><span>${c.chapters.length} chương · ${c.total} bài giảng</span><b>${pct}%</b></div><div class="bar"><i style="width:${pct}%"></i></div><div class="cc-btn"><i class="fa-solid fa-play"></i> ${w>0?'Tiếp tục học':'Bắt đầu học'}</div></div></div>`; };
+        const grpMap=new Map(); const solo=[];
+        list.forEach(c=>{ if(c.group){if(!grpMap.has(c.group))grpMap.set(c.group,[]);grpMap.get(c.group).push(c);}else solo.push(c); });
+        grpMap.forEach((cs,gn)=>{
+            h+=`<div class="subject-section"><div class="subject-label"><h2>📚 ${esc(gn)}</h2><span class="subj-pill">${cs.length} khóa học</span></div><div class="grid">`;
+            cs.forEach(c=>h+=ccHTML(c));
+            h+=`</div></div>`;
         });
-        h+='</div>';
+        if(solo.length){ h+='<div class="grid">'; solo.forEach(c=>h+=ccHTML(c)); h+='</div>'; }
     }
     app().innerHTML=h; renderMath(app());
 }
@@ -505,7 +507,7 @@ function renderCourse(name){
     if(!c){ app().innerHTML=`<div class="empty"><i class="fa-solid fa-circle-question"></i><p>Không tìm thấy khóa học.</p><p><a onclick="go('#home')">← Về trang chủ</a></p></div>`; return; }
     const pct=coursePct(c),w=courseWatched(c);
     const thumb=c.img&&/^https?:|^data:/.test(c.img)?`<img src="${esc(c.img)}" alt="">`:(c.img||'📘');
-    let h=`<div class="crumb"><a onclick="go('#home')">Khóa học</a><span class="sep">›</span><span class="cur">${esc(c.name)}</span></div>
+    let h=`<div class="crumb"><a onclick="go('#home')">Khóa học</a>${c.group?`<span class="sep">›</span><a onclick="go('#home')">${esc(c.group)}</a>`:''}<span class="sep">›</span><span class="cur">${esc(c.name)}</span></div>
         <div class="course-hero">
             <div class="ch-icon">${thumb}</div>
             <div style="flex:1;min-width:200px">
@@ -859,6 +861,8 @@ async function boot(){
     renderWho();
     const rows=await fetchLessons();
     COURSES=buildCourses(rows);
+    GROUPS=new Map();
+    COURSES.forEach(c=>{ if(c.group){ if(!GROUPS.has(c.group))GROUPS.set(c.group,[]); GROUPS.get(c.group).push(c); }});
     await fetchProgress();
     route();
 }

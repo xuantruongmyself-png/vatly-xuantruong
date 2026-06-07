@@ -211,4 +211,26 @@ async function loadExams() {
                 return `<div class="exam-card">
                     <div class="exam-left">
                         <div class="exam-num">ĐỀ ${num}</div>
-                        <div class="exam-titl
+                        <div class="exam-title">${ex.tenDe || '(chưa đặt tên)'}</div>
+                        <div class="exam-meta">
+                            <span><i class="fa-regular fa-clock"></i> ${thoiGian} phút</span>
+                            <span><i class="fa-regular fa-file-lines"></i> ${soCau} câu hỏi</span>
+                            <span><i class="fa-regular fa-user"></i> ${luotLam} lượt làm</span>
+                        </div>
+                    </div>
+                    <button class="btn-locked">
+                        <i class="fa-solid fa-lock" style="font-size:11px"></i> Đang cập nhật
+                    </button>
+                </div>`;
+            }
+        }).join('');
+
+    } catch(e) {
+        list.innerHTML = '<div style="text-align:center;padding:52px 20px;color:#888">Không thể tải danh sách đề. Vui lòng thử lại sau.</div>';
+    }
+}
+
+loadExams();
+</script>
+</body>
+</html>

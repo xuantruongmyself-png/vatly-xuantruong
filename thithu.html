@@ -512,4 +512,15 @@
         const container=document.getElementById('quiz-questions');
         container.innerHTML = summary + '<div class="part-title" style="margin-top:6px"><i class="fa-solid fa-list-check"></i> ĐÁP ÁN CHI TIẾT</div>' + reviewHtml;
         document.getElementById('submit-btn').classList.add('hidden');
-        document.getElementById('result-box').classList.add('hidden')
+        document.getElementById('result-box').classList.add('hidden');
+        document.getElementById('timer').innerHTML='<i class="fa-solid fa-circle-check"></i> Đã nộp bài';
+        window.scrollTo({top:0,behavior:'smooth'});
+        setTimeout(()=>{ if(typeof renderMathInElement==='function'){ try{ renderMathInElement(container,{delimiters:[{left:'$$',right:'$$',display:true},{left:'$',right:'$',display:false}]}); }catch(e){} } },60);
+        const payload={ name:studentData.name, studentClass:studentData.class, phone:studentData.phone, score:`${score}/${max}` };
+        fetch(databaseUrl,{ method:"POST", mode:"no-cors", headers:{"Content-Type":"text/plain;charset=utf-8"}, body:JSON.stringify(payload) })
+        .then(()=>{ const s=document.getElementById('save-status'); if(s) s.innerHTML='<i class="fa-solid fa-circle-check" style="color:var(--green)"></i> Đã lưu điểm lên Bảng Vàng thành công!'; })
+        .catch(err=>{ console.error("Lỗi gửi dữ liệu:",err); const s=document.getElementById('save-status'); if(s) s.innerHTML='<span style="color:var(--red)">Gặp sự cố khi lưu điểm tự động. Thầy/cô có thể ghi nhận thủ công.</span>'; });
+    }
+</script>
+</body>
+</html>

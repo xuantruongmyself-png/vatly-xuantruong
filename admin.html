@@ -75,7 +75,12 @@
         .course-block { background:var(--bg); border:1.5px solid var(--border); border-radius:14px; margin-bottom:16px; overflow:hidden; }
         .course-head { display:flex; align-items:center; gap:12px; padding:16px 20px; cursor:pointer; user-select:none; }
         .course-head:hover { background:var(--bg2); }
-        .course-head-actions { display:flex; gap:4px; align-items:center; flex-shrink:0; }
+        .course-action-bar { display:flex; gap:6px; align-items:center; padding:4px 20px 10px; border-bottom:1px solid var(--border); }
+        .course-action-btn { display:inline-flex; align-items:center; gap:5px; font-size:12px; font-weight:600; padding:4px 12px; border-radius:8px; cursor:pointer; border:1px solid; font-family:inherit; transition:all .15s; }
+        .course-action-btn.edit { background:rgba(11,132,243,.07); color:var(--blue); border-color:rgba(11,132,243,.25); }
+        .course-action-btn.edit:hover { background:rgba(11,132,243,.15); }
+        .course-action-btn.del { background:rgba(239,68,68,.07); color:#ef4444; border-color:rgba(239,68,68,.25); }
+        .course-action-btn.del:hover { background:rgba(239,68,68,.15); }
         .course-emoji { font-size:22px; width:36px; text-align:center; flex-shrink:0; }
         .course-title { font-size:16px; font-weight:800; letter-spacing:-.02em; flex:1; }
         .course-meta { font-size:12.5px; color:var(--gray2); }
@@ -658,15 +663,15 @@ function renderCourseBlock(course){
     const total=Object.values(course.chapters).reduce((s,arr)=>s+arr.length,0);
     const fn=esc(course.fullName).replace(/'/g,"&#39;");
     let html=`<div class="course-block open">
-        <div class="course-head" onclick="if(event.target.closest('.course-head-actions'))return;this.parentElement.classList.toggle('open')">
+        <div class="course-head" onclick="this.parentElement.classList.toggle('open')">
             <span class="course-emoji">${COURSE_EMOJI[course.fullName]||COURSE_EMOJI[course.name]||'📘'}</span>
             <span class="course-title">${esc(course.name)}</span>
             <span class="course-meta">${Object.keys(course.chapters).length} chương · ${total} bài</span>
-            <div class="course-head-actions">
-                <button class="ch-btn edit" title="Đổi tên khóa" onclick="renameCourse('${fn}')"><i class="fa-solid fa-pen"></i></button>
-                <button class="ch-btn del" title="Xóa khóa này" onclick="deleteCourse('${fn}')"><i class="fa-solid fa-trash"></i></button>
-            </div>
             <i class="fa-solid fa-chevron-right course-caret"></i>
+        </div>
+        <div class="course-action-bar">
+            <button class="course-action-btn edit" onclick="renameCourse('${fn}')"><i class="fa-solid fa-pen"></i> Đổi tên khóa</button>
+            <button class="course-action-btn del" onclick="deleteCourse('${fn}')"><i class="fa-solid fa-trash"></i> Xóa khóa này</button>
         </div>
         <div class="chapter-group">`;
     Object.entries(course.chapters).forEach(([chName,lessons])=>{

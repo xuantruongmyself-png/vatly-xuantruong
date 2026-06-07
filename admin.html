@@ -274,6 +274,49 @@
         @media(max-width:1000px){ .lesson-manager{grid-template-columns:1fr;} .lm-right{position:static;} }
         @media(max-width:700px){ .stat-row{grid-template-columns:1fr 1fr;} }
         @media(max-width:500px){ .wrap{padding:20px 12px 60px;} .stat-row{grid-template-columns:1fr;} }
+
+        /* ══════════════════════════════
+           EXAM MANAGER
+        ══════════════════════════════ */
+        .soande-grid { display:grid; grid-template-columns:380px 1fr; gap:28px; align-items:start; }
+        @media(max-width:1100px){ .soande-grid{grid-template-columns:1fr;} }
+
+        /* Em = Exam Manager left panel */
+        .em-toolbar { display:flex; align-items:center; justify-content:space-between; margin-bottom:16px; gap:10px; }
+        .em-toolbar h2 { font-size:18px; font-weight:800; letter-spacing:-.02em; }
+        .em-left { position:sticky; top:72px; }
+        .em-card { background:var(--bg); border:1.5px solid var(--border); border-radius:12px; margin-bottom:10px; overflow:hidden; transition:box-shadow .15s; }
+        .em-card:hover { box-shadow:0 4px 16px rgba(0,0,0,.07); }
+        .em-card-body { padding:16px 18px; }
+        .em-card-top { display:flex; align-items:center; gap:10px; margin-bottom:8px; }
+        .em-id { font-family:'DM Mono',monospace; font-size:11px; font-weight:700; color:var(--blue); background:rgba(11,132,243,.08); border-radius:6px; padding:2px 8px; }
+        .em-status { font-size:11px; font-weight:700; padding:2px 9px; border-radius:100px; }
+        .em-status.mo { background:rgba(22,163,74,.1); color:var(--green); }
+        .em-status.khoa { background:var(--bg3); color:var(--gray2); }
+        .em-title { font-size:15px; font-weight:800; letter-spacing:-.02em; margin-bottom:6px; }
+        .em-meta { font-size:13px; color:var(--gray2); display:flex; gap:14px; flex-wrap:wrap; }
+        .em-actions { display:flex; gap:0; border-top:1px solid var(--border); }
+        .em-btn { flex:1; padding:9px; background:transparent; border:none; font-size:12.5px; font-weight:600; cursor:pointer; font-family:'Inter',sans-serif; display:flex; align-items:center; justify-content:center; gap:5px; transition:background .12s; color:var(--gray); }
+        .em-btn:first-child { border-right:1px solid var(--border); }
+        .em-btn.edit:hover { background:rgba(11,132,243,.06); color:var(--blue); }
+        .em-btn.del:hover { background:rgba(220,38,38,.06); color:var(--red); }
+        .em-btn.toggle:hover { background:rgba(22,163,74,.06); color:var(--green); }
+
+        /* Exam form */
+        .em-form { background:var(--bg); border:1.5px solid var(--border); border-radius:12px; overflow:hidden; margin-top:10px; }
+        .em-form-head { padding:14px 18px; background:var(--bg2); border-bottom:1.5px solid var(--border); display:flex; align-items:center; gap:10px; }
+        .em-form-head h3 { font-size:15px; font-weight:800; flex:1; }
+        .em-form-body { padding:18px; }
+        .em-form-foot { padding:12px 18px; background:var(--bg2); border-top:1.5px solid var(--border); display:flex; gap:8px; }
+        .efd-row { display:grid; grid-template-columns:1fr 1fr; gap:10px; }
+
+        /* Exam selector in upload panel */
+        .exam-selector-box { background:var(--bg); border:1.5px solid rgba(11,132,243,.25); border-radius:12px; padding:20px 22px; margin:20px 0 0; }
+        .exam-selector-box h3 { font-size:15px; font-weight:800; margin-bottom:14px; display:flex; align-items:center; gap:8px; }
+        .esb-row { display:grid; grid-template-columns:1fr 1fr; gap:10px; margin-bottom:14px; }
+        .esb-label { font-size:12px; font-weight:700; color:var(--gray); text-transform:uppercase; letter-spacing:.4px; margin-bottom:5px; }
+        .esb-select { width:100%; padding:9px 12px; border:1.5px solid var(--border); border-radius:8px; background:var(--bg2); font-size:14px; font-family:'Inter',sans-serif; color:var(--black); outline:none; cursor:pointer; }
+        .esb-select:focus { border-color:var(--blue); }
     </style>
 </head>
 <body>
@@ -437,36 +480,129 @@
      TAB 2: SOẠN ĐỀ THI
 ════════════════════════════════════ -->
 <div class="tab-content" id="tab-soande">
-<div class="wrap" style="max-width:900px">
-    <span class="page-eyebrow">// soạn đề · bóc tách</span>
-    <h1 class="page-title">Tạo Đề Thi Tự Động.</h1>
-    <p class="page-sub">Kéo thả file Word <code>.docx</code> vào đây — hệ thống tự tách <strong>cả 3 phần</strong>: A/B/C/D, Đúng/Sai, Trả lời ngắn. Công thức và hình ảnh tự chuyển đổi.</p>
-    <div class="dropzone" id="dropzone">
-        <div class="dropzone-icon"><i class="fa-solid fa-cloud-arrow-up"></i></div>
-        <h3>Thả file Word (.docx) vào đây</h3>
-        <p>hoặc nhấn để chọn từ máy tính</p>
-        <div class="btn-browse"><i class="fa-solid fa-folder-open"></i> Duyệt file</div>
-        <input type="file" id="file-input" accept=".docx" style="display:none">
-    </div>
-    <div class="hint-bar">
-        <strong><i class="fa-solid fa-circle-info" style="color:var(--blue)"></i> Cấu trúc file Word chuẩn:</strong><br>
-        • Tách phần: <code>PHẦN I</code> / <code>PHẦN II</code> / <code>PHẦN III</code><br>
-        • Phần I (A/B/C/D): <code>Câu 1:</code> rồi <code>A. B. C. D.</code> — đặt <span class="star">★</span> trước đáp án đúng<br>
-        • Phần II (Đúng/Sai): <code>Câu 1.</code> rồi <code>a) b) c) d)</code> — đặt <span class="star">★</span> trước ý ĐÚNG<br>
-        • Phần III (Ngắn): <code>Câu 1.</code> rồi dòng <code>Đáp án: 117</code>
-    </div>
-    <div id="status2"></div>
-    <div id="preview-wrap2" style="display:none">
-        <div class="preview-header">
-            <h2><i class="fa-solid fa-list-check" style="color:var(--blue)"></i> Kết quả trích xuất</h2>
-            <span id="count-pill">0 câu</span>
+<div class="wrap">
+  <div class="soande-grid">
+
+    <!-- ── CỘT TRÁI: DANH SÁCH ĐỀ THI ── -->
+    <div class="em-left">
+      <div class="em-toolbar">
+        <h2><i class="fa-solid fa-layer-group" style="color:var(--blue);font-size:16px"></i> Danh sách đề</h2>
+        <button class="btn-new" style="padding:8px 16px;font-size:13px" onclick="showExamForm(null)">
+          <i class="fa-solid fa-plus"></i> Tạo đề mới
+        </button>
+      </div>
+      <div id="exam-list-panel"><div class="loading-row"><i class="fa-solid fa-spinner fa-spin"></i> Đang tải...</div></div>
+
+      <!-- Form thêm/sửa đề -->
+      <div class="em-form" id="exam-form-panel" style="display:none">
+        <div class="em-form-head">
+          <h3 id="exam-form-title">Tạo đề mới</h3>
+          <button class="fp-close" onclick="hideExamForm()"><i class="fa-solid fa-xmark"></i></button>
         </div>
-        <div id="preview2"></div>
-        <div class="action-row">
-            <button class="btn-publish" id="publish-btn" onclick="publishExam()"><i class="fa-solid fa-rocket"></i> Xuất Bản Lên Web</button>
-            <button class="btn-ghost2" onclick="resetAll()"><i class="fa-solid fa-rotate-left"></i> Làm lại</button>
+        <div class="em-form-body">
+          <input type="hidden" id="ef-exam-id-hidden">
+          <div class="form-field">
+            <label>Mã đề (examId) <span>*</span></label>
+            <input type="text" id="ef-examid" placeholder="vd: de01, de02, chuong1..." maxlength="30">
+          </div>
+          <div class="form-field">
+            <label>Tên đề <span>*</span></label>
+            <input type="text" id="ef-tende" placeholder="vd: Thi thử Tốt nghiệp THPT — Đề Số 1">
+          </div>
+          <div class="form-field">
+            <label>Mô tả ngắn</label>
+            <input type="text" id="ef-mota" placeholder="vd: 40 câu trắc nghiệm, 50 phút">
+          </div>
+          <div class="efd-row">
+            <div class="form-field">
+              <label>Thời gian (phút)</label>
+              <input type="number" id="ef-thoigian" value="45" min="5" max="180">
+            </div>
+            <div class="form-field">
+              <label>Lớp</label>
+              <select id="ef-lop">
+                <option value="12">Vật Lý 12</option>
+                <option value="11">Vật Lý 11</option>
+                <option value="10">Vật Lý 10</option>
+              </select>
+            </div>
+          </div>
+          <div class="form-field">
+            <label>Trạng thái</label>
+            <select id="ef-trangthai">
+              <option value="khoa">🔒 Khóa (học sinh chưa thấy)</option>
+              <option value="mo">✅ Mở (học sinh vào thi được)</option>
+            </select>
+          </div>
         </div>
+        <div class="em-form-foot">
+          <button class="btn-save" id="ef-save-btn" onclick="submitExamForm()">
+            <i class="fa-solid fa-floppy-disk"></i> Lưu đề
+          </button>
+          <button class="btn-cancel-form" onclick="hideExamForm()">Hủy</button>
+        </div>
+      </div>
     </div>
+
+    <!-- ── CỘT PHẢI: UPLOAD .DOCX ── -->
+    <div class="em-right">
+      <span class="page-eyebrow">// soạn đề · bóc tách</span>
+      <h1 class="page-title" style="font-size:32px">Upload Câu Hỏi.</h1>
+      <p class="page-sub" style="margin-bottom:20px">Kéo thả file Word <code>.docx</code> vào đây — hệ thống tự tách <strong>cả 3 phần</strong>: A/B/C/D, Đúng/Sai, Trả lời ngắn.</p>
+      <div class="dropzone" id="dropzone">
+          <div class="dropzone-icon"><i class="fa-solid fa-cloud-arrow-up"></i></div>
+          <h3>Thả file Word (.docx) vào đây</h3>
+          <p>hoặc nhấn để chọn từ máy tính</p>
+          <div class="btn-browse"><i class="fa-solid fa-folder-open"></i> Duyệt file</div>
+          <input type="file" id="file-input" accept=".docx" style="display:none">
+      </div>
+      <div class="hint-bar" style="margin-top:12px">
+          <strong><i class="fa-solid fa-circle-info" style="color:var(--blue)"></i> Cấu trúc file Word chuẩn:</strong><br>
+          • Tách phần: <code>PHẦN I</code> / <code>PHẦN II</code> / <code>PHẦN III</code><br>
+          • Phần I (A/B/C/D): <code>Câu 1:</code> rồi <code>A. B. C. D.</code> — đặt <span class="star">★</span> trước đáp án đúng<br>
+          • Phần II (Đúng/Sai): <code>Câu 1.</code> rồi <code>a) b) c) d)</code> — đặt <span class="star">★</span> trước ý ĐÚNG<br>
+          • Phần III (Ngắn): <code>Câu 1.</code> rồi dòng <code>Đáp án: 117</code>
+      </div>
+      <div id="status2"></div>
+      <div id="preview-wrap2" style="display:none">
+          <div class="preview-header">
+              <h2><i class="fa-solid fa-list-check" style="color:var(--blue)"></i> Kết quả trích xuất</h2>
+              <span id="count-pill">0 câu</span>
+          </div>
+          <div id="preview2"></div>
+
+          <!-- Chọn đề để xuất bản vào -->
+          <div class="exam-selector-box" id="exam-selector">
+            <h3><i class="fa-solid fa-arrow-right-to-bracket" style="color:var(--blue)"></i> Xuất bản vào đề nào?</h3>
+            <div class="esb-row">
+              <div>
+                <div class="esb-label">Chọn đề</div>
+                <select class="esb-select" id="target-exam-select">
+                  <option value="">— Chọn đề —</option>
+                </select>
+              </div>
+              <div>
+                <div class="esb-label">Chế độ</div>
+                <select class="esb-select" id="replace-mode">
+                  <option value="replace">Thay thế câu hỏi cũ của đề</option>
+                  <option value="append">Thêm vào cuối đề</option>
+                </select>
+              </div>
+            </div>
+            <div style="font-size:13px;color:var(--gray);margin-bottom:14px">
+              <i class="fa-solid fa-triangle-exclamation" style="color:var(--gold)"></i>
+              Chọn "Thay thế" sẽ xóa toàn bộ câu hỏi cũ của đề đó.
+            </div>
+          </div>
+
+          <div class="action-row">
+              <button class="btn-publish" id="publish-btn" onclick="publishExam()"><i class="fa-solid fa-rocket"></i> Xuất Bản Lên Web</button>
+              <button class="btn-ghost2" onclick="resetAll()"><i class="fa-solid fa-rotate-left"></i> Làm lại</button>
+          </div>
+      </div>
+    </div>
+
+  </div>
 </div>
 </div>
 
@@ -505,8 +641,8 @@
 <!-- CONFIRM DELETE -->
 <div class="confirm-overlay" id="confirm-overlay">
     <div class="confirm-box">
-        <h3><i class="fa-solid fa-triangle-exclamation" style="color:var(--red)"></i> Xác nhận xóa</h3>
-        <p id="confirm-msg">Bạn có chắc muốn xóa bài này không? Hành động này không thể hoàn tác.</p>
+        <h3 id="confirm-title"><i class="fa-solid fa-triangle-exclamation" style="color:var(--red)"></i> Xác nhận xóa</h3>
+        <p id="confirm-msg">Bạn có chắc muốn xóa không? Hành động này không thể hoàn tác.</p>
         <div class="confirm-btns">
             <button class="btn-confirm-del" id="confirm-yes">Xóa</button>
             <button class="btn-confirm-cancel" onclick="closeConfirm()">Hủy</button>
@@ -558,6 +694,7 @@ function switchTab(name){
     document.getElementById('tab-'+name).classList.add('active');
     document.getElementById('tab-'+name+'-btn').classList.add('active');
     if(name==='ketqua' && allScores.length===0) loadScores();
+    if(name==='soande') loadExamList();
 }
 
 /* ════════════════════════════════════
@@ -1227,25 +1364,172 @@ function renderPreview2(skipped){
     preview.querySelectorAll('.tf-btn').forEach(btn=>{btn.addEventListener('click',()=>{const rw=btn.closest('.tf-row');const idx=+rw.dataset.idx,L=rw.dataset.l,v=btn.dataset.v;const pos={A:0,B:1,C:2,D:3}[L];let arr=(parsedQuestions[idx].correct||'SSSS').split('');while(arr.length<4)arr.push('S');arr[pos]=v;parsedQuestions[idx].correct=arr.join('');rw.querySelectorAll('.tf-btn').forEach(b=>{b.classList.remove('sel-d','sel-s');});btn.classList.add(v==='Đ'?'sel-d':'sel-s');});});
     preview.querySelectorAll('input[data-short]').forEach(inp=>{inp.addEventListener('input',e=>{const idx=+e.target.dataset.short;parsedQuestions[idx].correct=e.target.value.trim();});});
     wrap.style.display='block';
+    document.getElementById('exam-selector').style.display='block';
     if(typeof renderMathInElement==='function'){try{renderMathInElement(preview,{delimiters:[{left:'$$',right:'$$',display:true},{left:'$',right:'$',display:false}]});}catch(e){}}
     wrap.scrollIntoView({behavior:'smooth'});
 }
+
+/* ═══════════════════════════════════════════
+   EXAM MANAGEMENT
+═══════════════════════════════════════════ */
+
+let examListData = [];
+
+async function loadExamList() {
+    try {
+        const r = await fetch(DB_URL + '?type=danhsachde');
+        const j = await r.json();
+        examListData = (j.ok && j.data) ? j.data : [];
+    } catch(e) { examListData = []; }
+    renderExamList();
+    populateExamSelect();
+}
+
+function renderExamList() {
+    const el = document.getElementById('exam-list-panel');
+    if (!el) return;
+    if (!examListData.length) {
+        el.innerHTML = '<div class="empty-list"><i class="fa-solid fa-layer-group"></i><p>Chưa có đề nào.<br>Nhấn "+ Tạo đề mới" để bắt đầu.</p></div>';
+        return;
+    }
+    el.innerHTML = examListData.map(ex => {
+        const st = ex.trangThai === 'mo' ? 'mo' : 'khoa';
+        const stLabel = st === 'mo' ? '✅ Mở' : '🔒 Khóa';
+        const safeTen = (ex.tenDe||'').replace(/'/g,"\\'");
+        return `<div class="em-card" id="emc-${ex.examId}">
+          <div class="em-card-body">
+            <div class="em-card-top">
+              <span class="em-id">${ex.examId}</span>
+              <span class="em-status ${st}">${stLabel}</span>
+            </div>
+            <div class="em-title">${ex.tenDe || '(chưa đặt tên)'}</div>
+            <div class="em-meta">
+              <span><i class="fa-regular fa-clock"></i> ${ex.thoiGian||45} phút</span>
+              <span><i class="fa-regular fa-file-lines"></i> ${ex.soCau||0} câu</span>
+              <span><i class="fa-regular fa-user"></i> ${ex.soLuotLam||0} lượt</span>
+            </div>
+          </div>
+          <div class="em-actions">
+            <button class="em-btn edit" onclick="showExamForm('${ex.examId}')"><i class="fa-solid fa-pen-to-square"></i> Sửa</button>
+            <button class="em-btn toggle" onclick="toggleExamStatus('${ex.examId}','${st}')">${st==='mo'?'<i class="fa-solid fa-lock"></i> Khóa':'<i class="fa-solid fa-lock-open"></i> Mở đề'}</button>
+            <button class="em-btn del" onclick="confirmDeleteExam('${ex.examId}','${safeTen}')"><i class="fa-solid fa-trash"></i> Xóa</button>
+          </div>
+        </div>`;
+    }).join('');
+}
+
+function populateExamSelect() {
+    const sel = document.getElementById('target-exam-select');
+    if (!sel) return;
+    sel.innerHTML = '<option value="">— Chọn đề —</option>' +
+        examListData.map(ex => `<option value="${ex.examId}">${ex.examId} · ${ex.tenDe||'(chưa đặt tên)'}</option>`).join('');
+}
+
+function showExamForm(examId) {
+    const panel = document.getElementById('exam-form-panel');
+    panel.style.display = 'block';
+    panel.scrollIntoView({ behavior:'smooth', block:'nearest' });
+    if (examId) {
+        const ex = examListData.find(e => e.examId === examId);
+        if (!ex) return;
+        document.getElementById('exam-form-title').textContent = 'Sửa đề: ' + examId;
+        document.getElementById('ef-examid').value = examId;
+        document.getElementById('ef-examid').disabled = true;
+        document.getElementById('ef-tende').value   = ex.tenDe || '';
+        document.getElementById('ef-mota').value    = ex.moTa  || '';
+        document.getElementById('ef-thoigian').value = ex.thoiGian || 45;
+        document.getElementById('ef-lop').value      = ex.lop  || '12';
+        document.getElementById('ef-trangthai').value = ex.trangThai || 'khoa';
+    } else {
+        document.getElementById('exam-form-title').textContent = 'Tạo đề mới';
+        document.getElementById('ef-examid').value = '';
+        document.getElementById('ef-examid').disabled = false;
+        document.getElementById('ef-tende').value = '';
+        document.getElementById('ef-mota').value  = '';
+        document.getElementById('ef-thoigian').value = 45;
+        document.getElementById('ef-lop').value   = '12';
+        document.getElementById('ef-trangthai').value = 'khoa';
+    }
+}
+
+function hideExamForm() { document.getElementById('exam-form-panel').style.display='none'; }
+
+async function submitExamForm() {
+    const btn = document.getElementById('ef-save-btn');
+    const examId  = (document.getElementById('ef-examid').value||'').trim().replace(/\s+/g,'').toLowerCase();
+    const tenDe   = document.getElementById('ef-tende').value.trim();
+    if (!examId) { alert('Vui lòng nhập mã đề (examId).'); return; }
+    if (!tenDe)  { alert('Vui lòng nhập tên đề.'); return; }
+    btn.disabled=true; btn.innerHTML='<i class="fa-solid fa-spinner fa-spin"></i> Đang lưu...';
+    const payload = {
+        action:'saveExam', examId, tenDe,
+        moTa:      document.getElementById('ef-mota').value.trim(),
+        thoiGian:  parseInt(document.getElementById('ef-thoigian').value)||45,
+        lop:       document.getElementById('ef-lop').value,
+        trangThai: document.getElementById('ef-trangthai').value
+    };
+    await fetch(DB_URL,{method:'POST',mode:'no-cors',headers:{'Content-Type':'text/plain;charset=utf-8'},body:JSON.stringify(payload)});
+    toast('<i class="fa-solid fa-circle-check"></i> Đã lưu đề!','ok');
+    hideExamForm();
+    btn.disabled=false; btn.innerHTML='<i class="fa-solid fa-floppy-disk"></i> Lưu đề';
+    setTimeout(loadExamList, 1500);
+}
+
+async function toggleExamStatus(examId, curStatus) {
+    const newStatus = curStatus==='mo'?'khoa':'mo';
+    await fetch(DB_URL,{method:'POST',mode:'no-cors',headers:{'Content-Type':'text/plain;charset=utf-8'},body:JSON.stringify({action:'saveExam',examId,trangThai:newStatus})});
+    toast(newStatus==='mo'?'✅ Đề đã được mở!':'🔒 Đề đã khóa!','ok');
+    setTimeout(loadExamList,1500);
+}
+
+let _pendingDeleteExamId = null;
+function confirmDeleteExam(examId, tenDe) {
+    _pendingDeleteExamId = examId;
+    document.getElementById('confirm-title').textContent = 'Xóa đề "' + tenDe + '"?';
+    document.getElementById('confirm-msg').textContent   = 'Toàn bộ câu hỏi của đề này sẽ bị xóa vĩnh viễn khỏi Sheets.';
+    document.getElementById('confirm-overlay').classList.add('show');
+    document.getElementById('confirm-yes').onclick = doDeleteExam;
+}
+
+async function doDeleteExam() {
+    closeConfirm();
+    if (!_pendingDeleteExamId) return;
+    await fetch(DB_URL,{method:'POST',mode:'no-cors',headers:{'Content-Type':'text/plain;charset=utf-8'},body:JSON.stringify({action:'deleteExam',examId:_pendingDeleteExamId})});
+    toast('<i class="fa-solid fa-trash"></i> Đã xóa đề!','ok');
+    _pendingDeleteExamId = null;
+    setTimeout(loadExamList,1500);
+}
+
+/* ═══════════════════════════════════════════
+   PUBLISH (updated: dùng examId được chọn)
+═══════════════════════════════════════════ */
 
 async function publishExam(){
     const badMc=parsedQuestions.filter(q=>q.type==='mc'&&!q.correct).length;
     const badSh=parsedQuestions.filter(q=>q.type==='short'&&!q.correct).length;
     if(badMc||badSh){alert(`Còn ${badMc} câu A/B/C/D và ${badSh} câu ngắn chưa có đáp án. Bổ sung trước khi xuất bản.`);return;}
-    if(!confirm('Xuất bản '+parsedQuestions.length+' câu lên web? Đề mới sẽ THAY THẾ đề cũ.'))return;
-    const btn=document.getElementById('publish-btn');btn.disabled=true;btn.innerHTML='<i class="fa-solid fa-spinner fa-spin"></i> Đang gửi...';
-    const payload={action:'saveQuestions',questions:parsedQuestions.map((q,i)=>({id:i+1,type:q.type,question:q.question,options:{A:q.options.A,B:q.options.B,C:q.options.C,D:q.options.D},correct:q.correct}))};
+    const targetExam=document.getElementById('target-exam-select').value;
+    if(!targetExam){alert('Chọn đề để xuất bản vào!');document.getElementById('target-exam-select').focus();return;}
+    const replaceMode=document.getElementById('replace-mode').value;
+    const clearFirst=(replaceMode==='replace');
+    const ex=examListData.find(e=>e.examId===targetExam);
+    const tenDe=ex?ex.tenDe:targetExam;
+    const msg=clearFirst?`Xuất bản ${parsedQuestions.length} câu vào đề "${tenDe}"?\n⚠️ Câu hỏi CŨ của đề này sẽ bị XÓA.`:`Thêm ${parsedQuestions.length} câu vào cuối đề "${tenDe}"?`;
+    if(!confirm(msg))return;
+    const btn=document.getElementById('publish-btn');
+    btn.disabled=true; btn.innerHTML='<i class="fa-solid fa-spinner fa-spin"></i> Đang gửi...';
+    const payload={
+        action:'saveQuestions', examId:targetExam, clearFirst,
+        questions:parsedQuestions.map((q,i)=>({id:i+1,type:q.type,question:q.question,optA:q.options.A,optB:q.options.B,optC:q.options.C,optD:q.options.D,correct:q.correct}))
+    };
     try{
-        const res=await fetch(DB_URL,{method:'POST',headers:{'Content-Type':'text/plain;charset=utf-8'},body:JSON.stringify(payload)});
-        let ok=true,count=parsedQuestions.length;try{const j=await res.json();ok=(j.result==='success');if(j.count!=null)count=j.count;}catch(e){}
-        if(ok){btn.innerHTML=`<i class="fa-solid fa-circle-check"></i> Đã xuất bản ${count} câu!`;toast('<i class="fa-solid fa-circle-check"></i> Đề thi đã lên web!','ok');}
-        else throw new Error('Apps Script báo lỗi');
-    }catch(err){
-        try{await fetch(DB_URL,{method:'POST',mode:'no-cors',headers:{'Content-Type':'text/plain;charset=utf-8'},body:JSON.stringify(payload)});btn.innerHTML='<i class="fa-solid fa-paper-plane"></i> Đã gửi (kiểm tra Sheets)';}
-        catch(e2){btn.disabled=false;btn.innerHTML='<i class="fa-solid fa-rocket"></i> Xuất Bản Lên Web';setStatus2('<i class="fa-solid fa-bug"></i> Gửi thất bại: '+err.message+'. Kiểm tra Apps Script.',true);}
+        await fetch(DB_URL,{method:'POST',mode:'no-cors',headers:{'Content-Type':'text/plain;charset=utf-8'},body:JSON.stringify(payload)});
+        btn.innerHTML=`<i class="fa-solid fa-circle-check"></i> Đã xuất bản ${parsedQuestions.length} câu!`;
+        toast(`<i class="fa-solid fa-circle-check"></i> Câu hỏi đã lên đề "${tenDe}"!`,'ok');
+        setTimeout(loadExamList,2000);
+    }catch(e){
+        btn.disabled=false; btn.innerHTML='<i class="fa-solid fa-rocket"></i> Xuất Bản Lên Web';
+        setStatus2('<i class="fa-solid fa-bug"></i> Gửi thất bại: '+e.message,'err');
     }
 }
 
@@ -1254,25 +1538,15 @@ function showSyncBadge(){
     setTimeout(()=>b.classList.remove('show'),3000);
 }
 
-async function deployToNetlify(){
-    const TOKEN='nfp_a42TXFjivCCVJT6fUCyZYvrvdYmNzf3kdfb2';
-    const SITE_ID='412fbb45-580b-410c-bfbb-6590331f4407';
-    const btn=document.getElementById('btn-deploy-netlify');
-    btn.classList.add('deploying'); btn.innerHTML='<i class="fa-solid fa-spinner fa-spin"></i> Đang deploy...';
-    try{
-        // Kiểm tra token
-        const check=await fetch(`https://api.netlify.com/api/v1/sites/${SITE_ID}`,{headers:{'Authorization':'Bearer '+TOKEN}});
-        if(!check.ok) throw new Error('Token hết hạn. Vui lòng liên hệ thầy để cấp token mới.');
-        // Mở Netlify để thầy upload thủ công nếu token ok
-        toast('<i class="fa-solid fa-circle-check"></i> Vào <a href="https://app.netlify.com/projects/vatlyxuantruong/overview" target="_blank" style="color:#fff;text-decoration:underline">Netlify</a> → kéo thả thư mục "Wed hoc" vào Production deploys để xuất bản!','ok');
-        window.open('https://app.netlify.com/projects/vatlyxuantruong/overview','_blank');
-    }catch(err){
-        toast('<i class="fa-solid fa-triangle-exclamation"></i> '+err.message,'err');
-    }
-    btn.classList.remove('deploying'); btn.innerHTML='<i class="fa-solid fa-rocket"></i> Xuất Bản Netlify';
+function resetAll(){
+    parsedQuestions=[];
+    document.getElementById('preview-wrap2').style.display='none';
+    document.getElementById('exam-selector').style.display='none';
+    document.getElementById('status2').className='';
+    fileInput.value='';
+    const btn=document.getElementById('publish-btn');
+    btn.disabled=false; btn.innerHTML='<i class="fa-solid fa-rocket"></i> Xuất Bản Lên Web';
 }
-
-function resetAll(){parsedQuestions=[];document.getElementById('preview-wrap2').style.display='none';document.getElementById('status2').className='';fileInput.value='';const btn=document.getElementById('publish-btn');btn.disabled=false;btn.innerHTML='<i class="fa-solid fa-rocket"></i> Xuất Bản Lên Web';}
 </script>
 </body>
 </html>

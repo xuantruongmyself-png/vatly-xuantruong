@@ -748,7 +748,7 @@ async function renameCourse(fullName){
     const lessons=allLessons.filter(r=>(r.KhoaHoc||r.khoahoc||r.course||'')===fullName);
     if(!lessons.length){alert('Không tìm thấy bài nào.');return;}
     if(!confirm('Đổi tên "'+oldTitle+'" → "'+newTitle.trim()+'"?\n('+lessons.length+' bài sẽ được cập nhật)')) return;
-    showToast('Đang cập nhật '+lessons.length+' bài…');
+    toast('<i class="fa-solid fa-spinner fa-spin"></i> Đang cập nhật '+lessons.length+' bài…');
     let ok=0;
     for(const l of lessons){
         const payload={
@@ -760,7 +760,7 @@ async function renameCourse(fullName){
         };
         try{await fetch(DB_URL,{method:'POST',mode:'no-cors',body:JSON.stringify(payload),headers:{'Content-Type':'text/plain;charset=utf-8'}});ok++;}catch(e){}
     }
-    showToast('✅ Đổi tên xong '+ok+'/'+lessons.length+' bài');
+    toast('✅ Đổi tên xong '+ok+'/'+lessons.length+' bài','ok');
     setTimeout(()=>{invalidateCache();loadLessons();},1500);
 }
 
@@ -772,13 +772,13 @@ async function deleteCourse(fullName){
     if(!lessons.length){alert('Không tìm thấy bài nào.');return;}
     if(!confirm('⚠️ Xóa toàn bộ khóa "'+cName+'"?\n'+lessons.length+' bài sẽ bị xóa vĩnh viễn.')) return;
     if(!confirm('Xác nhận lần 2: Xóa "'+cName+'" ('+lessons.length+' bài)?')) return;
-    showToast('Đang xóa '+lessons.length+' bài…');
+    toast('<i class="fa-solid fa-spinner fa-spin"></i> Đang xóa '+lessons.length+' bài…');
     let ok=0;
     for(const l of lessons){
         const key=(l.KhoaHoc||'')+'|||'+(l.Chuong||l.chuong||'')+'|||'+(l.TenBai||l.tenbai||'');
         try{await fetch(DB_URL,{method:'POST',mode:'no-cors',body:JSON.stringify({action:'deleteBaiHoc',key}),headers:{'Content-Type':'text/plain;charset=utf-8'}});ok++;}catch(e){}
     }
-    showToast('✅ Đã xóa '+ok+'/'+lessons.length+' bài');
+    toast('✅ Đã xóa '+ok+'/'+lessons.length+' bài','ok');
     setTimeout(()=>{invalidateCache();loadLessons();},1500);
 }
 
@@ -1272,7 +1272,4 @@ async function deployToNetlify(){
     btn.classList.remove('deploying'); btn.innerHTML='<i class="fa-solid fa-rocket"></i> Xuất Bản Netlify';
 }
 
-function resetAll(){parsedQuestions=[];document.getElementById('preview-wrap2').style.display='none';document.getElementById('status2').className='';fileInput.value='';const btn=document.getElementById('publish-btn');btn.disabled=false;btn.innerHTML='<i class="fa-solid fa-rocket"></i> Xuất Bản Lên Web';}
-</script>
-</body>
-</html>
+function resetAll(){parsedQuestions=[];document.getElementById('preview-wrap2').style.display='none';document.getElementById('status2').className='';fileInput.value='';const btn=document.getElementById('publish-btn');btn.disabled=false;btn.innerHTML='<i c

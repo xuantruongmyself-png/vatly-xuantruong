@@ -390,9 +390,9 @@ function buildCourses(rows){
         const cname=field(row,['khoahoc','khoa','course','mon']).toString().trim();
         const chname=(field(row,['chuong','chapter','phan'])||'Nội dung').toString().trim();
         const lname=field(row,['tenbai','bai','baihoc','tieude','title','ten']).toString().trim();
-        // Đọc NhomKhoa nếu có, hoặc tự phân tích từ tên khóa "TênKhóa - LớpHọc"
+        // Đọc NhomKhoa nếu có, hoặc tự phân tích từ "TênKhóa - LớpHọc"
         let gname=field(row,['nhomkhoa','nhom','group','lophoc']).toString().trim();
-        let dname=cname; // display name (có thể đã strip suffix)
+        let dname=cname;
         if(!gname){ const di=cname.lastIndexOf(' - '); if(di>0){ gname=cname.slice(di+3); dname=cname.slice(0,di); } }
         if(!cname||!lname) return;
         if(!cmap.has(cname)) cmap.set(cname,{name:cname, dname, desc:field(row,['motakhoa','mieutakhoa','desckhoa','mota']).toString().trim(), img:field(row,['anhkhoa','anh','thumb','hinh','icon','emoji']).toString().trim(), order:idx, group:gname, chMap:new Map()});
@@ -487,15 +487,27 @@ function renderHome(){
         </div>`;
     if(!list.length){ h+=`<div class="empty"><i class="fa-solid fa-box-open"></i><p>${homeState.tab==='mine'?'Em chưa bắt đầu khóa nào. Hãy chọn một khóa để học!':'Chưa có khóa học nào.'}</p></div>`; }
     else{
-        const ccHTML=c=>{ const pct=coursePct(c),w=courseWatched(c),nw=courseNew(c); const thumb=c.img&&/^https?:|^data:/.test(c.img)?`<img src="${esc(c.img)}" alt="">`:`<span>${c.img||'📘'}</span>`; return `<div class="course-card" onclick="go('#course/${encodeURIComponent(c.name)}')"><div class="cc-thumb">${thumb}${nw?`<span class="cc-new">${nw} bài mới</span>`:''}</div><div class="cc-body"><div class="cc-title">${esc(c.dname||c.name)}</div><div class="cc-desc">${esc(c.desc||'Khóa học Vật lý — học cùng thầy Trường.')}</div><div class="cc-meta"><span>${c.chapters.length} chương · ${c.total} bài giảng</span><b>${pct}%</b></div><div class="bar"><i style="width:${pct}%"></i></div><div class="cc-btn"><i class="fa-solid fa-play"></i> ${w>0?'Tiếp tục học':'Bắt đầu học'}</div></div></div>`; };
+        const ccHTML=c=>{
+            const pct=coursePct(c),w=courseWatched(c),nw=courseNew(c);
+            const thumb=c.img&&/^https?:|^data:/.test(c.img)?`<img src="${esc(c.img)}" alt="">`:`<span>${c.img||'📘'}</span>`;
+            return `<div class="course-card" onclick="go('#course/${encodeURIComponent(c.name)}')">
+                <div class="cc-thumb">${thumb}${nw?'<span class="cc-new">'+nw+' bài mới</span>':''}</div>
+                <div class="cc-body">
+                    <div class="cc-title">${esc(c.dname||c.name)}</div>
+                    <div class="cc-desc">${esc(c.desc||'Khóa học Vật lý — học cùng thầy Trường.')}</div>
+                    <div class="cc-meta"><span>${c.chapters.length} chương · ${c.total} bài giảng</span><b>${pct}%</b></div>
+                    <div class="bar"><i style="width:${pct}%"></i></div>
+                    <div class="cc-btn"><i class="fa-solid fa-play"></i> ${w>0?'Tiếp tục học':'Bắt đầu học'}</div>
+                </div></div>`;
+        };
         const grpMap=new Map(); const solo=[];
         list.forEach(c=>{ if(c.group){if(!grpMap.has(c.group))grpMap.set(c.group,[]);grpMap.get(c.group).push(c);}else solo.push(c); });
         grpMap.forEach((cs,gn)=>{
-            h+=`<div class="subject-section"><div class="subject-label"><h2>📚 ${esc(gn)}</h2><span class="subj-pill">${cs.length} khóa học</span></div><div class="grid">`;
-            cs.forEach(c=>h+=ccHTML(c));
-            h+=`</div></div>`;
+            h+='<div class="subject-section"><div class="subject-label"><h2>📚 '+esc(gn)+'</h2><span class="subj-pill">'+cs.length+' khóa học</span></div><div class="grid">';
+            cs.forEach(c=>{ h+=ccHTML(c); });
+            h+='</div></div>';
         });
-        if(solo.length){ h+='<div class="grid">'; solo.forEach(c=>h+=ccHTML(c)); h+='</div>'; }
+        if(solo.length){ h+='<div class="grid">'; solo.forEach(c=>{ h+=ccHTML(c); }); h+='</div>'; }
     }
     app().innerHTML=h; renderMath(app());
 }
@@ -511,11 +523,12 @@ function renderCourse(name){
     if(!c){ app().innerHTML=`<div class="empty"><i class="fa-solid fa-circle-question"></i><p>Không tìm thấy khóa học.</p><p><a onclick="go('#home')">← Về trang chủ</a></p></div>`; return; }
     const pct=coursePct(c),w=courseWatched(c);
     const thumb=c.img&&/^https?:|^data:/.test(c.img)?`<img src="${esc(c.img)}" alt="">`:(c.img||'📘');
-    let h=`<div class="crumb"><a onclick="go('#home')">Khóa học</a>${c.group?`<span class="sep">›</span><a onclick="go('#home')">${esc(c.group)}</a>`:''}<span class="sep">›</span><span class="cur">${esc(c.dname||c.name)}</span></div>
+    const grpCrumb=c.group?'<span class="sep">›</span><a onclick="go(\'#home\')">'+esc(c.group)+'</a>':'';
+    let h=`<div class="crumb"><a onclick="go('#home')">Khóa học</a>${grpCrumb}<span class="sep">›</span><span class="cur">${esc(c.dname||c.name)}</span></div>
         <div class="course-hero">
             <div class="ch-icon">${thumb}</div>
             <div style="flex:1;min-width:200px">
-                <h1>${esc(c.dname||c.name)}</h1>
+                <h1>${esc(c.name)}</h1>
                 <p>${esc(c.desc||'Khóa học Vật lý — học cùng thầy Trường.')}</p>
                 <div class="ch-prog">
                     <div class="cc-meta"><span>Đã học ${w}/${c.total} bài</span><b>${pct}%</b></div>
@@ -975,4 +988,12 @@ const DEMO_ROWS = [
 
 
     // ═══ VẬT LÝ 10 (placeholder) ═══
-    {KhoaHoc:'Vật Lý 10', MoTa
+    {KhoaHoc:'Vật Lý 10', MoTaKhoa:'Cơ học & Nhiệt học lớp 10 — Đang xây dựng nội dung.', AnhKhoa:'🚀',
+     Chuong:'Chương 1 — Động học', TenBai:'Bài 1: Chuyển động thẳng đều',
+     Video:'', VideoGiai:'', BaiTap:'', MoTaBai:'Vận tốc trung bình: $v = s/t$. Phương trình: $x = x_0 + vt$.', NgayDang:'01/04/2026'},
+];
+
+window.addEventListener('DOMContentLoaded', init);
+</script>
+</body>
+</html>

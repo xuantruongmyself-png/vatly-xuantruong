@@ -758,7 +758,7 @@ async function renameCourse(fullName){
             Video:l.Video||l.video||'',VideoGiai:l.VideoGiai||l.videogiai||'',
             MoTaBai:l.MoTaBai||l.motabai||'',NgayDang:l.NgayDang||l.ngaydang||'',BaiTap:l.BaiTap||l.baitap||''
         };
-        try{await fetch(GAS_URL,{method:'POST',mode:'no-cors',body:JSON.stringify(payload),headers:{'Content-Type':'text/plain;charset=utf-8'}});ok++;}catch(e){}
+        try{await fetch(DB_URL,{method:'POST',mode:'no-cors',body:JSON.stringify(payload),headers:{'Content-Type':'text/plain;charset=utf-8'}});ok++;}catch(e){}
     }
     showToast('✅ Đổi tên xong '+ok+'/'+lessons.length+' bài');
     setTimeout(()=>{invalidateCache();loadLessons();},1500);
@@ -776,7 +776,7 @@ async function deleteCourse(fullName){
     let ok=0;
     for(const l of lessons){
         const key=(l.KhoaHoc||'')+'|||'+(l.Chuong||l.chuong||'')+'|||'+(l.TenBai||l.tenbai||'');
-        try{await fetch(GAS_URL,{method:'POST',mode:'no-cors',body:JSON.stringify({action:'deleteBaiHoc',key}),headers:{'Content-Type':'text/plain;charset=utf-8'}});ok++;}catch(e){}
+        try{await fetch(DB_URL,{method:'POST',mode:'no-cors',body:JSON.stringify({action:'deleteBaiHoc',key}),headers:{'Content-Type':'text/plain;charset=utf-8'}});ok++;}catch(e){}
     }
     showToast('✅ Đã xóa '+ok+'/'+lessons.length+' bài');
     setTimeout(()=>{invalidateCache();loadLessons();},1500);

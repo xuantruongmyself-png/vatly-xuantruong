@@ -61,11 +61,28 @@ function sheetToJson(sheet) {
   const data = sheet.getDataRange().getValues();
   if (data.length < 2) return [];
   const headers = data[0];
-  return data.slice(1).map(row => {
-    const obj = {};
+  return data.slice(1).map((row, idx) => {
+    const obj = { _rowIndex: idx + 2 }; // 1-indexed, +1 for header
     headers.forEach((h, i) => { if (h) obj[h] = row[i] !== undefined ? row[i] : ''; });
     return obj;
   });
+}
+
+// Tìm rowIndex từ originalKey "KhoaHoc|||Chuong|||TenBai"
+function findRowByKey(sheet, key) {
+  if (!key) return null;
+  const parts = key.split('|||');
+  if (parts.length < 3) return null;
+  const [khoa, chuong, tenbai] = parts;
+  const data = sheet.getDataRange().getValues();
+  for (let i = 1; i < data.length; i++) {
+    if (String(data[i][0]) === String(khoa) &&
+        String(data[i][1]) === String(chuong) &&
+        String(data[i][2]) === String(tenbai)) {
+      return i + 1; // 1-indexed
+    }
+  }
+  return null;
 }
 
 function jsonOut(obj) {
@@ -281,23 +298,23 @@ function saveProgress(data) {
 
 function saveBaiHoc(data) {
   const sheet = getOrCreate('BaiHoc', ['KhoaHoc','Chuong','TenBai','Video','VideoGiai','MoTaBai','NgayDang','BaiTap']);
-  if (data.rowIndex) {
-    sheet.getRange(data.rowIndex, 1, 1, 8).setValues([[
-      data.KhoaHoc||'', data.Chuong||'', data.TenBai||'', data.Video||'',
-      data.VideoGiai||'', data.MoTaBai||'', data.NgayDang||new Date().toISOString(), data.BaiTap||''
-    ]]);
+  const rowIdx = data.rowIndex || findRowByKey(sheet, data.originalKey);
+  const vals = [
+    data.KhoaHoc||'', data.Chuong||'', data.TenBai||'', data.Video||'',
+    data.VideoGiai||'', data.MoTaBai||'', data.NgayDang||new Date().toISOString(), data.BaiTap||''
+  ];
+  if (rowIdx) {
+    sheet.getRange(rowIdx, 1, 1, 8).setValues([vals]);
   } else {
-    sheet.appendRow([
-      data.KhoaHoc||'', data.Chuong||'', data.TenBai||'', data.Video||'',
-      data.VideoGiai||'', data.MoTaBai||'', data.NgayDang||new Date().toISOString(), data.BaiTap||''
-    ]);
+    sheet.appendRow(vals);
   }
   return jsonOut({ ok: true });
 }
 
 function deleteBaiHoc(data) {
   const sheet = getOrCreate('BaiHoc', ['KhoaHoc','Chuong','TenBai','Video','VideoGiai','MoTaBai','NgayDang','BaiTap']);
-  if (data.rowIndex) sheet.deleteRow(data.rowIndex);
+  const rowIdx = data.rowIndex || findRowByKey(sheet, data.key || data.originalKey);
+  if (rowIdx) sheet.deleteRow(rowIdx);
   return jsonOut({ ok: true });
 }
 

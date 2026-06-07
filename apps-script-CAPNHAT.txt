@@ -387,4 +387,130 @@ function deleteExam(data) {
   // Xóa khỏi DanhSachDe
   const ds = getOrCreate('DanhSachDe', ['examId','tenDe','moTa','thoiGian','trangThai','lop','soLuotLam']);
   const dsRows = ds.getDataRange().getValues();
-  for 
+  for (let i = dsRows.length - 1; i >= 1; i--) {
+    if (String(dsRows[i][0]).trim() === examId) { ds.deleteRow(i+1); break; }
+  }
+
+  // Xóa câu hỏi của đề này (duyệt ngược để không bị lệch index)
+  const ngh = getOrCreate('NganHangDe', ['id','type','question','optA','optB','optC','optD','correct','examId']);
+  const nghRows = ngh.getDataRange().getValues();
+  for (let i = nghRows.length - 1; i >= 1; i--) {
+    if (String(nghRows[i][8] || 'de01').trim() === examId) ngh.deleteRow(i+1);
+  }
+
+  return jsonOut({ ok: true });
+}
+
+// ── POST: Tăng lượt làm khi học sinh bắt đầu thi ─────────────
+
+function incrementLam(data) {
+  const examId = String(data.examId || '').trim();
+  if (!examId) return jsonOut({ ok: false });
+  const sheet = getOrCreate('DanhSachDe', ['examId','tenDe','moTa','thoiGian','trangThai','lop','soLuotLam']);
+  const rows  = sheet.getDataRange().getValues();
+  for (let i = 1; i < rows.length; i++) {
+    if (String(rows[i][0]).trim() === examId) {
+      sheet.getRange(i+1, 7).setValue((Number(rows[i][6]) || 0) + 1);
+      return jsonOut({ ok: true });
+    }
+  }
+  return jsonOut({ ok: false, msg: 'examId không tồn tại' });
+}
+
+// ── POST: Lưu câu hỏi vào đề ─────────────────────────────────
+// NganHangDe: id | type | question | optA | optB | optC | optD | correct | examId
+
+function saveQuestions(data) {
+  const sheet  = getOrCreate('NganHangDe', ['id','type','question','optA','optB','optC','optD','correct','examId']);
+  const examId = String(data.examId || 'de01').trim();
+
+  if (data.clearFirst) {
+    // Chỉ xóa câu hỏi của đề này, giữ lại đề khác
+    const rows = sheet.getDataRange().getValues();
+    for (let i = rows.length - 1; i >= 1; i--) {
+      if (String(rows[i][8] || 'de01').trim() === examId) sheet.deleteRow(i + 1);
+    }
+  }
+
+  (data.questions || []).forEach(q => {
+    sheet.appendRow([
+      q.id || '', q.type || 'mc', q.question || '',
+      q.optA || q.options?.A || '',
+      q.optB || q.options?.B || '',
+      q.optC || q.options?.C || '',
+      q.optD || q.options?.D || '',
+      q.correct || '',
+      examId
+    ]);
+  });
+  return jsonOut({ ok: true, count: (data.questions || []).length });
+}
+
+// ── GET: Lấy link video từ Sheet nguồn (khoá luyện đề 2k8) ──
+
+function getSourceVideoLinks() {
+  try {
+    const src   = SpreadsheetApp.openById('1D1nNyP8UAllr2SYoHDF9bBWz2dQx12h_8qsF-2jZwGg');
+    const sheet = src.getSheets()[0];
+    const range = sheet.getDataRange();
+    const values    = range.getValues();
+    const richTexts = range.getRichTextValues();
+
+    const result = [];
+    for (let i = 1; i < values.length; i++) {
+      const tenBai = String(values[i][4] || '').trim();
+      const chuong = String(values[i][3] || '').trim();
+      if (!tenBai) continue;
+
+      const urls = [];
+      const rt = richTexts[i][7];
+      if (rt) {
+        const mainUrl = rt.getLinkUrl ? rt.getLinkUrl() : '';
+        if (mainUrl) urls.push(mainUrl);
+        if (rt.getRuns) {
+          rt.getRuns().forEach(run => {
+            const u = run.getLinkUrl ? run.getLinkUrl() : '';
+            if (u && !urls.includes(u)) urls.push(u);
+          });
+        }
+      }
+      if (!urls.length) {
+        const txt = String(values[i][7] || '').trim();
+        if (txt.startsWith('http')) urls.push(txt);
+      }
+
+      result.push({
+        stt:       values[i][0],
+        chuong,
+        tenBai,
+        videoUrl:  urls[0] || '',
+        videoUrl2: urls[1] || '',
+        allUrls:   urls
+      });
+    }
+    return jsonOut({ ok: true, data: result });
+  } catch(err) {
+    return jsonOut({ ok: false, error: err.message });
+  }
+}
+
+// ── POST: Cập nhật link video hàng loạt ───────────────────────
+
+function updateBaiHocVideo(data) {
+  const sheet = getOrCreate('BaiHoc', ['KhoaHoc','Chuong','TenBai','Video','VideoGiai','MoTaBai','NgayDang','BaiTap']);
+  const rows  = sheet.getDataRange().getValues();
+  let updated = 0;
+
+  (data.links || []).forEach(link => {
+    const name = String(link.tenBai || '').trim();
+    for (let i = 1; i < rows.length; i++) {
+      if (String(rows[i][2]).trim() === name) {
+        sheet.getRange(i + 1, 4).setValue(link.videoUrl  || '');
+        sheet.getRange(i + 1, 5).setValue(link.videoUrl2 || '');
+        updated++;
+        break;
+      }
+    }
+  });
+  return jsonOut({ ok: true, updated });
+}

@@ -81,6 +81,7 @@
         .nh-badge.b-vdc { background:#fef2f2; color:#b91c1c; }
         .nh-badge.b-ch { background:var(--bg2); color:var(--gray); border:1px solid var(--border); }
         .nh-badge.b-nhom { background:#f5f3ff; color:#6d28d9; }
+        .nh-badge.b-pl { background:#fef3c7; color:#92400e; font-weight:600; }
         .nh-q-text { font-size:14px; line-height:1.55; word-break:break-word; }
         .nh-opts { font-size:13px; color:var(--gray); margin-top:5px; line-height:1.6; }
         .nh-opts b.ok { color:#15803d; }
@@ -720,6 +721,15 @@
                 <select id="nh-f-loai" onchange="renderBankList()">
                     <option value="">Mọi loại câu</option>
                     <option value="TN">Trắc nghiệm</option><option value="DS">Đúng/Sai</option><option value="TLN">Trả lời ngắn</option>
+                </select>
+                <select id="nh-f-phanloai" onchange="renderBankList()">
+                    <option value="">Mọi dạng bài</option>
+                    <option value="LT-CB">LT: Cơ bản</option><option value="LT-PB">LT: Phản biện</option>
+                    <option value="LT-UD">LT: Ứng dụng</option><option value="LT-LUA">LT: Lừa</option>
+                    <option value="BT-CT">BT: Công thức</option><option value="BT-KH">BT: Khái quát</option><option value="BT-DT">BT: Đồ thị</option>
+                    <option value="DS-TN">DS: Thí nghiệm</option><option value="DS-UD">DS: Ứng dụng</option>
+                    <option value="DS-TT">DS: Tính toán</option><option value="DS-LT">DS: Lí thuyết</option>
+                    <option value="TLN-CT">TLN: Tính toán</option><option value="TLN-KH">TLN: Khái quát</option><option value="TLN-TH">TLN: Tổng hợp</option>
                 </select>
                 <input id="nh-f-search" placeholder="Tìm trong nội dung câu hỏi..." oninput="renderBankList()">
             </div>
@@ -1735,7 +1745,7 @@ async function loadBank(force){
     try{
         const r=await fetch(DB_URL+'?type=nganhang&t='+Date.now());
         const j=await r.json();
-        bankData=(j.data||[]).map(q=>({...q, loai:(q.loai||'TN').toString().toUpperCase().trim()}));
+        bankData=(j.data||[]).map(q=>{q={...q, loai:(q.loai||'TN').toString().toUpperCase().trim()}; if(!q.phanLoai) q.phanLoai=classifyTaxonomy(q); return q;});
         bankLoaded=true; bankSel.clear();
         renderBankStats(); fillBankFilters(); renderBankList(); updateSelBar();
     }catch(e){
@@ -1764,9 +1774,11 @@ function bankFiltered(){
           fc=document.getElementById('nh-f-chuong').value,
           fd=document.getElementById('nh-f-mucdo').value,
           fl=document.getElementById('nh-f-loai').value,
+          fp=document.getElementById('nh-f-phanloai').value,
           fs=(document.getElementById('nh-f-search').value||'').toLowerCase();
     return bankData.filter(q=>
         (!fm||q.mon===fm)&&(!fc||q.chuong===fc)&&(!fd||(q.mucDo||'').toUpperCase()===fd)&&(!fl||q.loai===fl)&&
+        (!fp||q.phanLoai===fp)&&
         (!fs||((q.question||'')+(q.deBaiChung||'')).toLowerCase().includes(fs)) );
 }
 const NH_LOAI_TEN={TN:'Trắc nghiệm',DS:'Đúng/Sai',TLN:'Trả lời ngắn'};
@@ -1798,6 +1810,7 @@ function bankRowHtml(q,withCheck){
                 <span class="nh-badge b-${q.loai.toLowerCase()}">${NH_LOAI_TEN[q.loai]||q.loai}</span>
                 ${md?`<span class="nh-badge b-${md.toLowerCase()}">${md}</span>`:''}
                 ${q.chuong?`<span class="nh-badge b-ch">${nhEsc(q.chuong)}</span>`:''}
+                ${q.phanLoai?`<span class="nh-badge b-pl" title="${nhEsc(NH_PL_TEN[q.phanLoai]||q.phanLoai)}">${nhEsc(q.phanLoai)}</span>`:''}
                 ${q.nhomId?`<span class="nh-badge b-nhom"><i class="fa-solid fa-link"></i> ${nhEsc(q.nhomId)}</span>`:''}
                 <span style="font-size:11px;color:var(--gray2)">${nhEsc(q.id||'')}</span>
             </div>
@@ -1863,10 +1876,38 @@ function nhStatus(html,isErr){
     s.innerHTML=html; s.style.color=isErr?'var(--red)':'var(--blue)';
 }
 function normKey(s){ return (s||'').toString().toLowerCase().normalize('NFD').replace(/[̀-ͯ]/g,'').replace(/đ/g,'d').replace(/[^a-z0-9]/g,''); }
-const NH_COLMAP={id:'id',mon:'mon',chuong:'chuong',mucdo:'mucDo',loaicau:'loai',loai:'loai',nhomid:'nhomId',nhom:'nhomId',debaichung:'deBaiChung',cauhoi:'question',noidung:'question',a:'optA',b:'optB',c:'optC',d:'optD',dapan:'correct',hinhanh:'hinhAnh',anh:'hinhAnh',giaithich:'giaiThich',loigiai:'giaiThich'};
+const NH_COLMAP={id:'id',mon:'mon',chuong:'chuong',mucdo:'mucDo',loaicau:'loai',loai:'loai',phanloai:'phanLoai',nhomid:'nhomId',nhom:'nhomId',debaichung:'deBaiChung',cauhoi:'question',noidung:'question',a:'optA',b:'optB',c:'optC',d:'optD',dapan:'correct',hinhanh:'hinhAnh',anh:'hinhAnh',giaithich:'giaiThich',loigiai:'giaiThich',nguon:'nguon'};
+const NH_PL_TEN={'LT-CB':'Lí thuyết cơ bản','LT-PB':'Lí thuyết phản biện','LT-UD':'Lí thuyết ứng dụng','LT-LUA':'Lí thuyết lừa','BT-CT':'Bài tập công thức','BT-KH':'Bài tập khái quát','BT-DT':'Bài tập đồ thị','DS-TN':'Đúng/Sai thí nghiệm','DS-UD':'Đúng/Sai ứng dụng','DS-TT':'Đúng/Sai tính toán','DS-LT':'Đúng/Sai lí thuyết','TLN-CT':'TLN tính toán','TLN-KH':'TLN khái quát','TLN-TH':'TLN tổng hợp'};
+function classifyTaxonomy(q){
+    const loai=q.loai||'TN', mucdo=(q.mucDo||'').toUpperCase(), ch=(q.question||'').toLowerCase();
+    const opts=((q.optA||'')+(q.optB||'')+(q.optC||'')+(q.optD||'')).toLowerCase();
+    const hasNum=/\d/.test(opts.slice(0,120));
+    const calcKw=['tính','bằng bao nhiêu','giá trị','xấp xỉ','gần nhất','kết quả','lít','kg','mol','cm','mm','pa ','atm','nhiệt lượng','thể tích nước','khối lượng','số mol','lực từ','cảm ứng từ','chu kì','tần số','vận tốc','năng lượng','hoạt độ','bán kính','khoảng cách'];
+    const isCalc=calcKw.some(k=>ch.includes(k));
+    if(loai==='TN'){
+        if(/đồ thị|hình vẽ|biểu đồ/.test(ch)) return 'BT-DT';
+        if(isCalc||(mucdo==='VD'&&hasNum)) return 'BT-CT';
+        if(/không đúng|không chính xác|sai/.test(ch)) return 'LT-PB';
+        if(/giải thích|hiện tượng|nguyên nhân|vì sao|tại sao|ứng dụng/.test(ch)) return 'LT-UD';
+        if(mucdo==='NB') return 'LT-CB';
+        if(mucdo==='TH') return hasNum?'BT-CT':'LT-CB';
+        return hasNum?'BT-CT':'BT-KH';
+    }
+    if(loai==='DS'){
+        if(/thí nghiệm|thực hành|đo/.test(ch)) return 'DS-TN';
+        if(isCalc||hasNum||['VD','VDC'].includes(mucdo)) return 'DS-TT';
+        return 'DS-LT';
+    }
+    if(loai==='TLN'){
+        if(isCalc||['VD','VDC'].includes(mucdo)) return 'TLN-CT';
+        if(mucdo==='TH') return 'TLN-TH';
+        return 'TLN-KH';
+    }
+    return 'LT-CB';
+}
 function normLoai(v){ v=normKey(v); if(['ds','dungsai','tf','ii'].includes(v))return 'DS'; if(['tln','traloingan','short','iii'].includes(v))return 'TLN'; return 'TN'; }
 function normMucDo(v){ const k=normKey(v); if(k.startsWith('nhanbiet')||k==='nb')return 'NB'; if(k.startsWith('thonghieu')||k==='th')return 'TH'; if(k.startsWith('vandungcao')||k==='vdc')return 'VDC'; if(k.startsWith('vandung')||k==='vd')return 'VD'; return (v||'').toString().toUpperCase().trim(); }
-function normDapAnDS(v){ return (v||'').toString().toUpperCase().replace(/D/g,'Đ').replace(/[^ĐS]/g,''); }
+function normDapAnDS(v){ return (v||'').toString().toUpperCase().replace(/D/g,'Đ').replace(/Đ̛?/g,'Đ').replace(/[^ĐS]/g,''); }
 
 async function bankHandleFile(file){
     document.getElementById('nh-preview-zone').style.display='none'; bankParsed=[];
@@ -1883,6 +1924,7 @@ async function bankHandleFile(file){
             Object.keys(row).forEach(k=>{ const f=NH_COLMAP[normKey(k)]; if(f) q[f]=(row[k]==null?'':row[k]).toString().trim(); });
             if(!q.question) return; /* bỏ dòng trống */
             q.loai=normLoai(q.loaicau||q.loai); q.mucDo=normMucDo(q.mucDo);
+            if(!q.phanLoai) q.phanLoai=classifyTaxonomy(q);
             const n=i+2;
             if(q.loai==='TN'){
                 q.correct=(q.correct||'').toUpperCase().replace(/[^ABCD]/g,'');

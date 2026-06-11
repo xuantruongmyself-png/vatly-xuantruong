@@ -1,10 +1,11 @@
 // ════════════════════════════════════════════════════════════════
-// APPS SCRIPT TOÀN DIỆN — Vật Lý Xuân Trường  (có Auth v2 + Exam Manager v2)
+// APPS SCRIPT TOÀN DIỆN — Vật Lý Xuân Trường  (v16: + Ngân Hàng Câu Hỏi)
 // Dán toàn bộ đoạn này vào Google Apps Script, rồi Deploy lại.
 // ════════════════════════════════════════════════════════════════
 // CẤU TRÚC GOOGLE SHEETS CẦN CÓ:
 //   Tab "BaiHoc"     : KhoaHoc | Chuong | TenBai | Video | VideoGiai | MoTaBai | NgayDang | BaiTap
 //   Tab "NganHangDe" : id | type | question | optA | optB | optC | optD | correct | examId
+//   Tab "NganHang"   : id | mon | chuong | mucDo | loai | nhomId | deBaiChung | question | optA | optB | optC | optD | correct | hinhAnh | giaiThich | ngayThem
 //   Tab "DanhSachDe" : examId | tenDe | moTa | thoiGian | trangThai | lop | soLuotLam
 //   Tab "BangVang"   : name | studentClass | phone | score | timestamp
 //   Tab "TienDo"     : sdt | lesson | khoa | ten | lop | ngay
@@ -23,6 +24,7 @@ function doGet(e) {
     if (type === 'leaderboard')      return getLeaderboard();
     if (type === 'sourcevideolinks') return getSourceVideoLinks();
     if (type === 'danhsachde')       return getDanhSachDe();
+    if (type === 'nganhang')         return getNganHang();
     if (type === 'examquestions')    return getExamQuestions(examId || 'de01');
     return getExamQuestions('de01'); // backward compat — không có type param
   } catch(err) {
@@ -40,6 +42,9 @@ function doPost(e) {
     if (action === 'savebaihoc')         return saveBaiHoc(data);
     if (action === 'deletebaihoc')       return deleteBaiHoc(data);
     if (action === 'savequestions')      return saveQuestions(data);
+    if (action === 'savenganhang')       return saveNganHang(data);
+    if (action === 'deletenganhang')     return deleteNganHang(data);
+    if (action === 'updatenganhang')     return updateNganHang(data);
     if (action === 'saveprogress')       return saveProgress(data);
     if (action === 'savescore')          return saveScore(data);
     if (action === 'updatebaihocvideo')  return updateBaiHocVideo(data);
@@ -444,6 +449,97 @@ function saveQuestions(data) {
     ]);
   });
   return jsonOut({ ok: true, count: (data.questions || []).length });
+}
+
+// ════════════════════════════════════════════════════════════════
+// NGÂN HÀNG CÂU HỎI (v16) — kho câu hỏi độc lập, dùng để tổng hợp đề
+// Schema: id(0) | mon(1) | chuong(2) | mucDo(3) | loai(4) | nhomId(5) |
+//         deBaiChung(6) | question(7) | optA(8) | optB(9) | optC(10) |
+//         optD(11) | correct(12) | hinhAnh(13) | giaiThich(14) | ngayThem(15)
+// ════════════════════════════════════════════════════════════════
+
+const NH_HEADERS = ['id','mon','chuong','mucDo','loai','nhomId','deBaiChung','question','optA','optB','optC','optD','correct','hinhAnh','giaiThich','ngayThem'];
+
+// ── GET: Toàn bộ ngân hàng câu hỏi ───────────────────────────
+function getNganHang() {
+  const sheet = getOrCreate('NganHang', NH_HEADERS);
+  const data  = sheet.getDataRange().getValues();
+  if (data.length < 2) return jsonOut({ ok: true, data: [] });
+  const rows = data.slice(1).map(r => ({
+    id: r[0], mon: r[1], chuong: r[2], mucDo: r[3], loai: r[4] || 'TN',
+    nhomId: r[5], deBaiChung: r[6], question: r[7],
+    optA: r[8], optB: r[9], optC: r[10], optD: r[11],
+    correct: r[12], hinhAnh: r[13], giaiThich: r[14], ngayThem: r[15]
+  })).filter(r => r.question);
+  return jsonOut({ ok: true, data: rows });
+}
+
+// ── POST: Nạp câu hỏi vào ngân hàng (append, tự sinh id) ─────
+function saveNganHang(data) {
+  const sheet = getOrCreate('NganHang', NH_HEADERS);
+  const existing = sheet.getDataRange().getValues();
+  // Tìm số id lớn nhất hiện có (id dạng NH00001)
+  let maxNum = 0;
+  for (let i = 1; i < existing.length; i++) {
+    const m = String(existing[i][0]).match(/^NH(\d+)$/);
+    if (m) maxNum = Math.max(maxNum, parseInt(m[1], 10));
+  }
+  const now = new Date().toISOString();
+  const added = [];
+  (data.questions || []).forEach(q => {
+    let id = String(q.id || '').trim();
+    if (!id) { maxNum++; id = 'NH' + String(maxNum).padStart(5, '0'); }
+    sheet.appendRow([
+      id, q.mon || '', q.chuong || '', q.mucDo || '', q.loai || 'TN',
+      q.nhomId || '', q.deBaiChung || '', q.question || '',
+      q.optA || '', q.optB || '', q.optC || '', q.optD || '',
+      q.correct || '', q.hinhAnh || '', q.giaiThich || '', now
+    ]);
+    added.push(id);
+  });
+  return jsonOut({ ok: true, count: added.length, ids: added });
+}
+
+// ── POST: Xóa câu hỏi khỏi ngân hàng theo danh sách id ───────
+function deleteNganHang(data) {
+  const ids = (data.ids || []).map(x => String(x).trim());
+  if (!ids.length) return jsonOut({ ok: false, msg: 'Thiếu ids' });
+  const sheet = getOrCreate('NganHang', NH_HEADERS);
+  const rows = sheet.getDataRange().getValues();
+  let deleted = 0;
+  for (let i = rows.length - 1; i >= 1; i--) {
+    if (ids.indexOf(String(rows[i][0]).trim()) !== -1) { sheet.deleteRow(i + 1); deleted++; }
+  }
+  return jsonOut({ ok: true, deleted });
+}
+
+// ── POST: Sửa 1 câu trong ngân hàng theo id ──────────────────
+function updateNganHang(data) {
+  const id = String(data.id || '').trim();
+  if (!id) return jsonOut({ ok: false, msg: 'Thiếu id' });
+  const sheet = getOrCreate('NganHang', NH_HEADERS);
+  const rows = sheet.getDataRange().getValues();
+  for (let i = 1; i < rows.length; i++) {
+    if (String(rows[i][0]).trim() === id) {
+      const q = data.q || data;
+      sheet.getRange(i + 1, 1, 1, 16).setValues([[
+        id, q.mon || rows[i][1], q.chuong || rows[i][2], q.mucDo || rows[i][3],
+        q.loai || rows[i][4], q.nhomId !== undefined ? q.nhomId : rows[i][5],
+        q.deBaiChung !== undefined ? q.deBaiChung : rows[i][6],
+        q.question || rows[i][7],
+        q.optA !== undefined ? q.optA : rows[i][8],
+        q.optB !== undefined ? q.optB : rows[i][9],
+        q.optC !== undefined ? q.optC : rows[i][10],
+        q.optD !== undefined ? q.optD : rows[i][11],
+        q.correct !== undefined ? q.correct : rows[i][12],
+        q.hinhAnh !== undefined ? q.hinhAnh : rows[i][13],
+        q.giaiThich !== undefined ? q.giaiThich : rows[i][14],
+        rows[i][15]
+      ]]);
+      return jsonOut({ ok: true });
+    }
+  }
+  return jsonOut({ ok: false, msg: 'Không tìm thấy id ' + id });
 }
 
 // ── GET: Lấy link video từ Sheet nguồn (khoá luyện đề 2k8) ──

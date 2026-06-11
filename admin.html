@@ -9,6 +9,7 @@
     <script defer src="https://cdn.jsdelivr.net/npm/katex@0.16.9/dist/contrib/auto-render.min.js"></script>
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
     <script src="https://cdnjs.cloudflare.com/ajax/libs/jszip/3.10.1/jszip.min.js"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/xlsx/0.18.5/xlsx.full.min.js"></script>
     <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800;900&family=DM+Mono:wght@400;500&display=swap" rel="stylesheet">
     <style>
         *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
@@ -53,6 +54,49 @@
         /* ── SHARED WRAP ── */
         .tab-content { display:none; }
         .tab-content.active { display:block; }
+
+        /* ── Ngân hàng câu hỏi ── */
+        .nh-grid { display:grid; grid-template-columns:380px 1fr; gap:24px; align-items:start; }
+        @media(max-width:1000px){ .nh-grid{grid-template-columns:1fr;} }
+        .nh-card { background:var(--bg); border:1.5px solid var(--border); border-radius:12px; padding:20px; margin-bottom:20px; }
+        .nh-card h3 { font-size:15px; font-weight:800; margin-bottom:12px; display:flex; align-items:center; gap:8px; }
+        .nh-filter-row { display:flex; gap:10px; flex-wrap:wrap; margin-bottom:14px; }
+        .nh-filter-row select, .nh-filter-row input { padding:9px 12px; border:1.5px solid var(--border); border-radius:8px; font-size:13px; background:var(--bg); font-family:'Inter',sans-serif; color:var(--black); }
+        .nh-filter-row input { flex:1; min-width:160px; }
+        .nh-list { border:1.5px solid var(--border); border-radius:12px; overflow:hidden; background:var(--bg); }
+        .nh-row { display:flex; gap:12px; padding:14px 16px; border-bottom:1px solid var(--border); align-items:flex-start; }
+        .nh-row:last-child { border-bottom:none; }
+        .nh-row:hover { background:var(--bg2); }
+        .nh-row.selected { background:#eff6ff; }
+        .nh-row input[type=checkbox] { width:17px; height:17px; margin-top:3px; accent-color:var(--blue); cursor:pointer; flex-shrink:0; }
+        .nh-q-body { flex:1; min-width:0; }
+        .nh-meta { display:flex; gap:6px; flex-wrap:wrap; margin-bottom:6px; align-items:center; }
+        .nh-badge { font-size:11px; font-weight:700; padding:2px 9px; border-radius:20px; white-space:nowrap; }
+        .nh-badge.b-tn { background:#dbeafe; color:#1e40af; }
+        .nh-badge.b-ds { background:#fef3c7; color:#92400e; }
+        .nh-badge.b-tln { background:#d1fae5; color:#065f46; }
+        .nh-badge.b-nb { background:#f0fdf4; color:#15803d; }
+        .nh-badge.b-th { background:#eff6ff; color:#1d4ed8; }
+        .nh-badge.b-vd { background:#fff7ed; color:#c2410c; }
+        .nh-badge.b-vdc { background:#fef2f2; color:#b91c1c; }
+        .nh-badge.b-ch { background:var(--bg2); color:var(--gray); border:1px solid var(--border); }
+        .nh-badge.b-nhom { background:#f5f3ff; color:#6d28d9; }
+        .nh-q-text { font-size:14px; line-height:1.55; word-break:break-word; }
+        .nh-opts { font-size:13px; color:var(--gray); margin-top:5px; line-height:1.6; }
+        .nh-opts b.ok { color:#15803d; }
+        .nh-context { background:#f0f9ff; border-left:3px solid var(--blue); padding:7px 10px; font-size:13px; margin-bottom:6px; border-radius:6px; color:#0c4a6e; }
+        .nh-img-thumb { max-height:90px; max-width:220px; border-radius:6px; border:1px solid var(--border); margin-top:6px; display:block; }
+        .nh-del-btn { border:none; background:transparent; color:var(--gray2); cursor:pointer; font-size:14px; padding:6px; flex-shrink:0; }
+        .nh-del-btn:hover { color:var(--red); }
+        .nh-selbar { position:sticky; bottom:12px; display:none; align-items:center; gap:12px; background:#0f172a; color:#fff; padding:12px 18px; border-radius:12px; margin-top:14px; box-shadow:0 8px 24px rgba(0,0,0,.25); flex-wrap:wrap; }
+        .nh-selbar.show { display:flex; }
+        .nh-selbar .ns-count { font-weight:800; font-size:14px; }
+        .nh-selbar button { border:none; border-radius:8px; padding:9px 16px; font-size:13px; font-weight:700; cursor:pointer; font-family:'Inter',sans-serif; }
+        .nh-progress { height:8px; background:var(--bg2); border-radius:6px; overflow:hidden; margin-top:10px; display:none; }
+        .nh-progress .bar { height:100%; width:0; background:var(--blue); transition:width .3s; }
+        .nh-up-status { font-size:13px; margin-top:10px; line-height:1.6; }
+        .nh-preview-list { max-height:380px; overflow-y:auto; margin-top:12px; border:1.5px solid var(--border); border-radius:10px; }
+        .nh-err { color:var(--red); font-size:13px; background:#fef2f2; border:1px solid #fecaca; border-radius:8px; padding:8px 12px; margin-top:8px; }
         .wrap { max-width:1200px; margin:0 auto; padding:32px 24px 80px; }
 
         /* ══════════════════════════════
@@ -361,6 +405,9 @@
     <button class="tab-btn" onclick="switchTab('soande')" id="tab-soande-btn">
         <i class="fa-solid fa-file-import"></i> Soạn đề thi
     </button>
+    <button class="tab-btn" onclick="switchTab('nganhang')" id="tab-nganhang-btn">
+        <i class="fa-solid fa-database"></i> Ngân hàng đề
+    </button>
     <button class="tab-btn" onclick="switchTab('ketqua')" id="tab-ketqua-btn">
         <i class="fa-solid fa-trophy"></i> Kết quả thi
     </button>
@@ -607,6 +654,118 @@
 </div>
 
 <!-- ════════════════════════════════════
+     TAB: NGÂN HÀNG CÂU HỎI
+════════════════════════════════════ -->
+<div class="tab-content" id="tab-nganhang">
+<div class="wrap">
+    <div class="lm-toolbar" style="margin-bottom:20px">
+        <h2><i class="fa-solid fa-database" style="color:var(--blue);font-size:20px"></i> Ngân hàng câu hỏi</h2>
+        <div style="display:flex;gap:10px">
+            <a href="Mau_NganHangDe.xlsx" download class="btn-new" style="background:var(--bg2);color:var(--black);border:1.5px solid var(--border);text-decoration:none">
+                <i class="fa-solid fa-file-excel" style="color:#15803d"></i> Tải file Excel mẫu
+            </a>
+            <button class="btn-new" style="background:var(--blue)" onclick="loadBank(true)">
+                <i class="fa-solid fa-rotate-right"></i> Làm mới
+            </button>
+        </div>
+    </div>
+
+    <div class="stat-row" style="margin-bottom:24px">
+        <div class="stat-card"><div class="stat-label">Tổng số câu</div><div class="stat-val blue" id="nh-s-total">—</div></div>
+        <div class="stat-card"><div class="stat-label">Trắc nghiệm</div><div class="stat-val" id="nh-s-tn">—</div></div>
+        <div class="stat-card"><div class="stat-label">Đúng / Sai</div><div class="stat-val" id="nh-s-ds">—</div></div>
+        <div class="stat-card"><div class="stat-label">Trả lời ngắn</div><div class="stat-val green" id="nh-s-tln">—</div></div>
+    </div>
+
+    <div class="nh-grid">
+        <!-- CỘT TRÁI: NẠP FILE EXCEL -->
+        <div>
+            <div class="nh-card">
+                <h3><i class="fa-solid fa-file-arrow-up" style="color:var(--blue)"></i> Nạp câu hỏi từ Excel</h3>
+                <div class="dropzone" id="nh-dropzone" style="padding:28px 16px">
+                    <div class="dropzone-icon"><i class="fa-solid fa-file-excel" style="color:#15803d"></i></div>
+                    <h3 style="font-size:15px">Thả file .xlsx vào đây</h3>
+                    <p style="font-size:13px">theo đúng cấu trúc file mẫu</p>
+                    <div class="btn-browse" style="font-size:13px;padding:9px 18px"><i class="fa-solid fa-folder-open"></i> Chọn file</div>
+                    <input type="file" id="nh-file-input" accept=".xlsx,.xls" style="display:none">
+                </div>
+                <div class="nh-up-status" id="nh-up-status"></div>
+                <div class="nh-progress" id="nh-progress"><div class="bar" id="nh-progress-bar"></div></div>
+                <div id="nh-preview-zone" style="display:none">
+                    <div class="nh-preview-list" id="nh-preview-list"></div>
+                    <button class="btn-publish" id="nh-publish-btn" style="width:100%;margin-top:12px" onclick="bankPublish()">
+                        <i class="fa-solid fa-cloud-arrow-up"></i> Nạp vào ngân hàng
+                    </button>
+                </div>
+            </div>
+            <div class="hint-bar">
+                <strong><i class="fa-solid fa-circle-info" style="color:var(--blue)"></i> Quy trình:</strong><br>
+                1. Ném tài liệu (Word/PDF/ảnh) cho Claude bốc tách thành file Excel chuẩn<br>
+                2. Mở file kiểm tra lại → thả vào ô trên<br>
+                3. Hệ thống tự phân loại theo <b>chương · mức độ · loại câu</b><br>
+                4. Tick chọn câu trong kho → bấm <b>"Tạo đề thi"</b>
+            </div>
+        </div>
+
+        <!-- CỘT PHẢI: KHO CÂU HỎI -->
+        <div>
+            <div class="nh-filter-row">
+                <select id="nh-f-mon" onchange="renderBankList()"><option value="">Tất cả môn</option></select>
+                <select id="nh-f-chuong" onchange="renderBankList()"><option value="">Tất cả chương</option></select>
+                <select id="nh-f-mucdo" onchange="renderBankList()">
+                    <option value="">Mọi mức độ</option>
+                    <option value="NB">Nhận biết</option><option value="TH">Thông hiểu</option>
+                    <option value="VD">Vận dụng</option><option value="VDC">Vận dụng cao</option>
+                </select>
+                <select id="nh-f-loai" onchange="renderBankList()">
+                    <option value="">Mọi loại câu</option>
+                    <option value="TN">Trắc nghiệm</option><option value="DS">Đúng/Sai</option><option value="TLN">Trả lời ngắn</option>
+                </select>
+                <input id="nh-f-search" placeholder="Tìm trong nội dung câu hỏi..." oninput="renderBankList()">
+            </div>
+            <div style="display:flex;gap:10px;margin-bottom:10px;align-items:center;font-size:13px;color:var(--gray)">
+                <label style="display:flex;align-items:center;gap:6px;cursor:pointer"><input type="checkbox" id="nh-check-all" onchange="bankToggleAll(this.checked)" style="width:15px;height:15px;accent-color:var(--blue)"> Chọn tất cả (theo bộ lọc)</label>
+                <span id="nh-list-count"></span>
+            </div>
+            <div class="nh-list" id="nh-list">
+                <div class="loading-row" style="padding:40px"><i class="fa-solid fa-spinner fa-spin" style="color:var(--blue);font-size:22px"></i><p style="margin-top:10px;font-size:14px">Đang tải ngân hàng...</p></div>
+            </div>
+
+            <!-- THANH HÀNH ĐỘNG KHI CHỌN CÂU -->
+            <div class="nh-selbar" id="nh-selbar">
+                <span class="ns-count"><i class="fa-solid fa-circle-check" style="color:#4ade80"></i> Đã chọn <span id="nh-sel-count">0</span> câu</span>
+                <button style="background:#2563eb;color:#fff" onclick="showBankExamForm()"><i class="fa-solid fa-wand-magic-sparkles"></i> Tạo đề thi từ câu đã chọn</button>
+                <button style="background:#dc2626;color:#fff" onclick="bankDeleteSelected()"><i class="fa-solid fa-trash"></i> Xóa khỏi ngân hàng</button>
+                <button style="background:rgba(255,255,255,.15);color:#fff" onclick="bankClearSelection()">Bỏ chọn</button>
+            </div>
+
+            <!-- FORM TẠO ĐỀ TỪ NGÂN HÀNG -->
+            <div class="nh-card" id="nh-exam-form" style="display:none;margin-top:16px;border-color:var(--blue)">
+                <h3><i class="fa-solid fa-wand-magic-sparkles" style="color:var(--blue)"></i> Tạo đề thi từ <span id="nh-ef-count">0</span> câu đã chọn</h3>
+                <div class="efd-row" style="display:grid;grid-template-columns:1fr 1fr;gap:12px">
+                    <div class="form-field"><label>Mã đề (examId) <span>*</span></label><input type="text" id="nh-ef-examid" placeholder="vd: de05, giuaky1..."></div>
+                    <div class="form-field"><label>Thời gian (phút)</label><input type="number" id="nh-ef-thoigian" value="50" min="5" max="180"></div>
+                </div>
+                <div class="form-field"><label>Tên đề <span>*</span></label><input type="text" id="nh-ef-tende" placeholder="vd: Đề ôn tập chương Từ trường"></div>
+                <div class="efd-row" style="display:grid;grid-template-columns:1fr 1fr;gap:12px">
+                    <div class="form-field"><label>Lớp</label>
+                        <select id="nh-ef-lop"><option value="12">Vật Lý 12</option><option value="11">Vật Lý 11</option><option value="10">Vật Lý 10</option></select>
+                    </div>
+                    <div class="form-field"><label>Trạng thái</label>
+                        <select id="nh-ef-trangthai"><option value="khoa">🔒 Khóa (chưa công bố)</option><option value="mo">✅ Mở ngay</option></select>
+                    </div>
+                </div>
+                <div style="display:flex;gap:10px;margin-top:6px">
+                    <button class="btn-publish" id="nh-ef-create-btn" style="flex:1" onclick="bankCreateExam()"><i class="fa-solid fa-rocket"></i> Tạo đề & đưa câu hỏi vào</button>
+                    <button class="btn-ghost2" onclick="document.getElementById('nh-exam-form').style.display='none'">Hủy</button>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+</div>
+
+<!-- ════════════════════════════════════
      TAB 3: KẾT QUẢ THI
 ════════════════════════════════════ -->
 <div class="tab-content" id="tab-ketqua">
@@ -695,6 +854,7 @@ function switchTab(name){
     document.getElementById('tab-'+name+'-btn').classList.add('active');
     if(name==='ketqua' && allScores.length===0) loadScores();
     if(name==='soande') loadExamList();
+    if(name==='nganhang' && !bankLoaded) loadBank();
 }
 
 /* ════════════════════════════════════
@@ -1546,6 +1706,285 @@ function resetAll(){
     fileInput.value='';
     const btn=document.getElementById('publish-btn');
     btn.disabled=false; btn.innerHTML='<i class="fa-solid fa-rocket"></i> Xuất Bản Lên Web';
+}
+
+/* ════════════════════════════════════
+   TAB: NGÂN HÀNG CÂU HỎI
+════════════════════════════════════ */
+let bankData=[], bankLoaded=false, bankParsed=[], bankSel=new Set();
+
+/* Chuyển link Google Drive bất kỳ thành link ảnh hiển thị được */
+function driveImg(url){
+    url=(url||'').toString().trim(); if(!url) return '';
+    let id='';
+    let m=url.match(/\/file\/d\/([A-Za-z0-9_-]{10,})/); if(m) id=m[1];
+    if(!id){ m=url.match(/[?&]id=([A-Za-z0-9_-]{10,})/); if(m) id=m[1]; }
+    if(!id){ m=url.match(/\/d\/([A-Za-z0-9_-]{10,})/); if(m) id=m[1]; }
+    if(!id && /^[A-Za-z0-9_-]{10,}$/.test(url)) id=url;
+    if(id) return 'https://drive.google.com/thumbnail?id='+id+'&sz=w1000';
+    return url; /* link ảnh thường */
+}
+function nhEsc(s){ return esc(s); }
+function nhKatex(el){ setTimeout(()=>{ if(typeof renderMathInElement==='function'){ try{ renderMathInElement(el,{delimiters:[{left:'$$',right:'$$',display:true},{left:'$',right:'$',display:false}]}); }catch(e){} } },80); }
+
+/* ── Tải ngân hàng từ Google Sheets ── */
+async function loadBank(force){
+    if(force) bankLoaded=false;
+    const list=document.getElementById('nh-list');
+    list.innerHTML='<div class="loading-row" style="padding:40px"><i class="fa-solid fa-spinner fa-spin" style="color:var(--blue);font-size:22px"></i><p style="margin-top:10px;font-size:14px">Đang tải ngân hàng...</p></div>';
+    try{
+        const r=await fetch(DB_URL+'?type=nganhang&t='+Date.now());
+        const j=await r.json();
+        bankData=(j.data||[]).map(q=>({...q, loai:(q.loai||'TN').toString().toUpperCase().trim()}));
+        bankLoaded=true; bankSel.clear();
+        renderBankStats(); fillBankFilters(); renderBankList(); updateSelBar();
+    }catch(e){
+        list.innerHTML='<div class="loading-row" style="padding:30px;color:var(--red)">Lỗi tải ngân hàng: '+nhEsc(e.message)+'</div>';
+    }
+}
+function renderBankStats(){
+    const c={TN:0,DS:0,TLN:0};
+    bankData.forEach(q=>{ if(c[q.loai]!==undefined)c[q.loai]++; });
+    document.getElementById('nh-s-total').textContent=bankData.length;
+    document.getElementById('nh-s-tn').textContent=c.TN;
+    document.getElementById('nh-s-ds').textContent=c.DS;
+    document.getElementById('nh-s-tln').textContent=c.TLN;
+}
+function fillBankFilters(){
+    const mons=[...new Set(bankData.map(q=>q.mon).filter(Boolean))].sort();
+    const chuongs=[...new Set(bankData.map(q=>q.chuong).filter(Boolean))].sort();
+    const sm=document.getElementById('nh-f-mon'), sc=document.getElementById('nh-f-chuong');
+    const vm=sm.value, vc=sc.value;
+    sm.innerHTML='<option value="">Tất cả môn</option>'+mons.map(m=>`<option>${nhEsc(m)}</option>`).join('');
+    sc.innerHTML='<option value="">Tất cả chương</option>'+chuongs.map(m=>`<option>${nhEsc(m)}</option>`).join('');
+    sm.value=vm; sc.value=vc;
+}
+function bankFiltered(){
+    const fm=document.getElementById('nh-f-mon').value,
+          fc=document.getElementById('nh-f-chuong').value,
+          fd=document.getElementById('nh-f-mucdo').value,
+          fl=document.getElementById('nh-f-loai').value,
+          fs=(document.getElementById('nh-f-search').value||'').toLowerCase();
+    return bankData.filter(q=>
+        (!fm||q.mon===fm)&&(!fc||q.chuong===fc)&&(!fd||(q.mucDo||'').toUpperCase()===fd)&&(!fl||q.loai===fl)&&
+        (!fs||((q.question||'')+(q.deBaiChung||'')).toLowerCase().includes(fs)) );
+}
+const NH_LOAI_TEN={TN:'Trắc nghiệm',DS:'Đúng/Sai',TLN:'Trả lời ngắn'};
+function bankRowHtml(q,withCheck){
+    const sel=bankSel.has(q.id);
+    const sub=['A','B','C','D'];
+    let opts='';
+    if(q.loai==='TN'){
+        opts=sub.filter(L=>q['opt'+L]).map(L=>{
+            const ok=(q.correct||'').toString().trim().toUpperCase()===L;
+            return `<b class="${ok?'ok':''}">${L}.</b> ${nhEsc(q['opt'+L])}`;
+        }).join(' &nbsp; ');
+    }else if(q.loai==='DS'){
+        const corr=(q.correct||'').toString().replace(/[^ĐSds]/g,'').toUpperCase();
+        opts=sub.filter(L=>q['opt'+L]).map((L,i)=>{
+            const v=corr[i]||'?';
+            return `<b class="${v==='Đ'?'ok':''}">${String.fromCharCode(97+i)})</b> ${nhEsc(q['opt'+L])} <b class="${v==='Đ'?'ok':''}">[${v}]</b>`;
+        }).join('<br>');
+    }else{
+        opts=`<b class="ok">Đáp án: ${nhEsc(q.correct)}</b>`;
+    }
+    const img=q.hinhAnh?`<img class="nh-img-thumb" src="${nhEsc(driveImg(q.hinhAnh))}" loading="lazy" onerror="this.style.display='none'">`:'';
+    const ctx=q.deBaiChung?`<div class="nh-context">${q.deBaiChung}</div>`:'';
+    const md=(q.mucDo||'').toUpperCase();
+    return `<div class="nh-row ${sel?'selected':''}" id="nh-row-${nhEsc(q.id)}">
+        ${withCheck?`<input type="checkbox" ${sel?'checked':''} onchange="bankToggle('${nhEsc(q.id)}',this.checked)">`:''}
+        <div class="nh-q-body">
+            <div class="nh-meta">
+                <span class="nh-badge b-${q.loai.toLowerCase()}">${NH_LOAI_TEN[q.loai]||q.loai}</span>
+                ${md?`<span class="nh-badge b-${md.toLowerCase()}">${md}</span>`:''}
+                ${q.chuong?`<span class="nh-badge b-ch">${nhEsc(q.chuong)}</span>`:''}
+                ${q.nhomId?`<span class="nh-badge b-nhom"><i class="fa-solid fa-link"></i> ${nhEsc(q.nhomId)}</span>`:''}
+                <span style="font-size:11px;color:var(--gray2)">${nhEsc(q.id||'')}</span>
+            </div>
+            ${ctx}<div class="nh-q-text">${q.question||''}</div>${img}
+            <div class="nh-opts">${opts}</div>
+        </div>
+        ${withCheck?`<button class="nh-del-btn" title="Xóa câu này" onclick="bankDeleteOne('${nhEsc(q.id)}')"><i class="fa-solid fa-trash"></i></button>`:''}
+    </div>`;
+}
+function renderBankList(){
+    const rows=bankFiltered();
+    const list=document.getElementById('nh-list');
+    document.getElementById('nh-list-count').textContent='Hiển thị '+rows.length+' / '+bankData.length+' câu';
+    if(!bankData.length){ list.innerHTML='<div class="loading-row" style="padding:36px;font-size:14px;color:var(--gray)">Ngân hàng trống. Hãy nạp câu hỏi từ file Excel ở cột bên trái.</div>'; return; }
+    if(!rows.length){ list.innerHTML='<div class="loading-row" style="padding:30px;font-size:14px;color:var(--gray)">Không có câu nào khớp bộ lọc.</div>'; return; }
+    list.innerHTML=rows.map(q=>bankRowHtml(q,true)).join('');
+    nhKatex(list);
+}
+
+/* ── Chọn câu ── */
+function bankToggle(id,on){ if(on)bankSel.add(id); else bankSel.delete(id);
+    const row=document.getElementById('nh-row-'+id); if(row)row.classList.toggle('selected',on); updateSelBar(); }
+function bankToggleAll(on){ bankFiltered().forEach(q=>{ if(on)bankSel.add(q.id); else bankSel.delete(q.id); }); renderBankList(); updateSelBar(); }
+function bankClearSelection(){ bankSel.clear(); document.getElementById('nh-check-all').checked=false; renderBankList(); updateSelBar(); document.getElementById('nh-exam-form').style.display='none'; }
+function updateSelBar(){
+    const n=bankSel.size;
+    document.getElementById('nh-sel-count').textContent=n;
+    document.getElementById('nh-selbar').classList.toggle('show',n>0);
+    if(n===0) document.getElementById('nh-exam-form').style.display='none';
+}
+
+/* ── Xóa câu ── */
+function bankDeleteOne(id){ _bankDeleteIds([id]); }
+function bankDeleteSelected(){ _bankDeleteIds([...bankSel]); }
+function _bankDeleteIds(ids){
+    if(!ids.length) return;
+    openConfirm('Xóa '+ids.length+' câu khỏi ngân hàng? Hành động này không thể hoàn tác.', async ()=>{
+        try{
+            await fetch(DB_URL,{method:'POST',mode:'no-cors',headers:{'Content-Type':'text/plain;charset=utf-8'},body:JSON.stringify({action:'deleteNganHang',ids})});
+            bankData=bankData.filter(q=>!ids.includes(q.id));
+            ids.forEach(i=>bankSel.delete(i));
+            renderBankStats(); fillBankFilters(); renderBankList(); updateSelBar();
+            toast('<i class="fa-solid fa-circle-check"></i> Đã xóa '+ids.length+' câu','ok');
+        }catch(e){ toast('Lỗi: '+e.message,'err'); }
+    });
+}
+function openConfirm(msg,onYes){
+    document.getElementById('confirm-msg').textContent=msg;
+    document.getElementById('confirm-overlay').classList.add('show');
+    document.getElementById('confirm-yes').onclick=()=>{ closeConfirm(); onYes(); };
+}
+
+/* ── Đọc file Excel ── */
+const nhDrop=document.getElementById('nh-dropzone'), nhFile=document.getElementById('nh-file-input');
+nhDrop.addEventListener('click',()=>nhFile.click());
+nhFile.addEventListener('change',e=>{ if(e.target.files.length) bankHandleFile(e.target.files[0]); });
+['dragenter','dragover'].forEach(ev=>nhDrop.addEventListener(ev,e=>{e.preventDefault();nhDrop.classList.add('dragover');}));
+['dragleave','drop'].forEach(ev=>nhDrop.addEventListener(ev,e=>{e.preventDefault();nhDrop.classList.remove('dragover');}));
+nhDrop.addEventListener('drop',e=>{ const f=e.dataTransfer.files[0]; if(f) bankHandleFile(f); });
+
+function nhStatus(html,isErr){
+    const s=document.getElementById('nh-up-status');
+    s.innerHTML=html; s.style.color=isErr?'var(--red)':'var(--blue)';
+}
+function normKey(s){ return (s||'').toString().toLowerCase().normalize('NFD').replace(/[̀-ͯ]/g,'').replace(/đ/g,'d').replace(/[^a-z0-9]/g,''); }
+const NH_COLMAP={id:'id',mon:'mon',chuong:'chuong',mucdo:'mucDo',loaicau:'loai',loai:'loai',nhomid:'nhomId',nhom:'nhomId',debaichung:'deBaiChung',cauhoi:'question',noidung:'question',a:'optA',b:'optB',c:'optC',d:'optD',dapan:'correct',hinhanh:'hinhAnh',anh:'hinhAnh',giaithich:'giaiThich',loigiai:'giaiThich'};
+function normLoai(v){ v=normKey(v); if(['ds','dungsai','tf','ii'].includes(v))return 'DS'; if(['tln','traloingan','short','iii'].includes(v))return 'TLN'; return 'TN'; }
+function normMucDo(v){ const k=normKey(v); if(k.startsWith('nhanbiet')||k==='nb')return 'NB'; if(k.startsWith('thonghieu')||k==='th')return 'TH'; if(k.startsWith('vandungcao')||k==='vdc')return 'VDC'; if(k.startsWith('vandung')||k==='vd')return 'VD'; return (v||'').toString().toUpperCase().trim(); }
+function normDapAnDS(v){ return (v||'').toString().toUpperCase().replace(/D/g,'Đ').replace(/[^ĐS]/g,''); }
+
+async function bankHandleFile(file){
+    document.getElementById('nh-preview-zone').style.display='none'; bankParsed=[];
+    if(typeof XLSX==='undefined'){ nhStatus('<i class="fa-solid fa-triangle-exclamation"></i> Chưa tải được thư viện đọc Excel. Tải lại trang (F5).',true); return; }
+    nhStatus('<i class="fa-solid fa-spinner fa-spin"></i> Đang đọc '+nhEsc(file.name)+'...');
+    try{
+        const wb=XLSX.read(await file.arrayBuffer(),{type:'array'});
+        const wsName=wb.SheetNames.includes('NganHang')?'NganHang':wb.SheetNames[0];
+        const raw=XLSX.utils.sheet_to_json(wb.Sheets[wsName],{defval:''});
+        if(!raw.length){ nhStatus('File không có dữ liệu.',true); return; }
+        const errs=[];
+        raw.forEach((row,i)=>{
+            const q={};
+            Object.keys(row).forEach(k=>{ const f=NH_COLMAP[normKey(k)]; if(f) q[f]=(row[k]==null?'':row[k]).toString().trim(); });
+            if(!q.question) return; /* bỏ dòng trống */
+            q.loai=normLoai(q.loaicau||q.loai); q.mucDo=normMucDo(q.mucDo);
+            const n=i+2;
+            if(q.loai==='TN'){
+                q.correct=(q.correct||'').toUpperCase().replace(/[^ABCD]/g,'');
+                if(!q.correct) errs.push('Dòng '+n+': câu TN thiếu đáp án (A/B/C/D).');
+                if(!q.optA||!q.optB||!q.optC||!q.optD) errs.push('Dòng '+n+': câu TN thiếu phương án.');
+            }else if(q.loai==='DS'){
+                q.correct=normDapAnDS(q.correct);
+                if(q.correct.length!==4) errs.push('Dòng '+n+': câu Đúng/Sai cần đủ 4 giá trị Đ/S (vd: Đ,S,S,Đ).');
+            }else{
+                if(!q.correct) errs.push('Dòng '+n+': câu Trả lời ngắn thiếu đáp số.');
+            }
+            bankParsed.push(q);
+        });
+        if(!bankParsed.length){ nhStatus('Không tìm thấy câu hỏi nào. Kiểm tra lại cột "CauHoi" trong file.',true); return; }
+        let html='';
+        if(errs.length) html+='<div class="nh-err"><b>'+errs.length+' lỗi cần sửa trong file:</b><br>'+errs.slice(0,8).map(nhEsc).join('<br>')+(errs.length>8?'<br>...':'')+'</div>';
+        nhStatus('<i class="fa-solid fa-circle-check"></i> Đọc được <b>'+bankParsed.length+'</b> câu từ '+nhEsc(file.name)+(errs.length?' — <span style="color:var(--red)">có '+errs.length+' lỗi, sửa file rồi thả lại</span>':''));
+        document.getElementById('nh-up-status').insertAdjacentHTML('beforeend',html);
+        const list=document.getElementById('nh-preview-list');
+        list.innerHTML=bankParsed.map(q=>bankRowHtml(q,false)).join('');
+        document.getElementById('nh-preview-zone').style.display='block';
+        document.getElementById('nh-publish-btn').disabled=errs.length>0;
+        nhKatex(list);
+    }catch(e){ nhStatus('Lỗi đọc file: '+nhEsc(e.message),true); }
+}
+
+/* ── Nạp vào ngân hàng (chia gói 40 câu) ── */
+async function bankPublish(){
+    if(!bankParsed.length) return;
+    const btn=document.getElementById('nh-publish-btn'); btn.disabled=true;
+    const prog=document.getElementById('nh-progress'), bar=document.getElementById('nh-progress-bar');
+    prog.style.display='block';
+    const CHUNK=40; let done=0;
+    for(let i=0;i<bankParsed.length;i+=CHUNK){
+        const part=bankParsed.slice(i,i+CHUNK);
+        btn.innerHTML='<i class="fa-solid fa-spinner fa-spin"></i> Đang nạp '+(done+part.length)+'/'+bankParsed.length+'...';
+        try{
+            await fetch(DB_URL,{method:'POST',mode:'no-cors',headers:{'Content-Type':'text/plain;charset=utf-8'},body:JSON.stringify({action:'saveNganHang',questions:part})});
+        }catch(e){}
+        done+=part.length; bar.style.width=Math.round(done/bankParsed.length*100)+'%';
+        await new Promise(r=>setTimeout(r,800));
+    }
+    btn.innerHTML='<i class="fa-solid fa-circle-check"></i> Đã nạp '+done+' câu!';
+    toast('<i class="fa-solid fa-circle-check"></i> Đã nạp '+done+' câu vào ngân hàng','ok');
+    setTimeout(()=>{ prog.style.display='none'; bar.style.width='0';
+        document.getElementById('nh-preview-zone').style.display='none';
+        document.getElementById('nh-up-status').innerHTML=''; bankParsed=[]; nhFile.value='';
+        btn.disabled=false; btn.innerHTML='<i class="fa-solid fa-cloud-arrow-up"></i> Nạp vào ngân hàng';
+        loadBank(true);
+    },2200);
+}
+
+/* ── Tạo đề thi từ câu đã chọn ── */
+function showBankExamForm(){
+    document.getElementById('nh-ef-count').textContent=bankSel.size;
+    document.getElementById('nh-exam-form').style.display='block';
+    document.getElementById('nh-exam-form').scrollIntoView({behavior:'smooth',block:'center'});
+}
+function bankCreateExam(){
+    const examId=document.getElementById('nh-ef-examid').value.trim();
+    const tenDe=document.getElementById('nh-ef-tende').value.trim();
+    if(!examId||!tenDe){ toast('Điền mã đề và tên đề!','err'); return; }
+    if(!bankSel.size){ toast('Chưa chọn câu nào!','err'); return; }
+    const chosen=bankData.filter(q=>bankSel.has(q.id));
+    /* Sắp xếp: TN → DS → TLN, câu cùng nhóm đứng cạnh nhau */
+    const order={TN:0,DS:1,TLN:2};
+    const groups={}; chosen.forEach(q=>{ const g=q.nhomId||('__'+q.id); (groups[g]=groups[g]||[]).push(q); });
+    const sorted=[];
+    Object.values(groups).sort((a,b)=>(order[a[0].loai]||0)-(order[b[0].loai]||0)).forEach(g=>sorted.push(...g));
+    /* Dựng câu hỏi: ghép đề bài chung + ảnh vào nội dung */
+    const typeMap={TN:'mc',DS:'tf',TLN:'short'};
+    const doneCtx=new Set();
+    const questions=sorted.map((q,i)=>{
+        let html=q.question||'';
+        if(q.nhomId&&q.deBaiChung&&!doneCtx.has(q.nhomId)){ html='<div class="q-context">'+q.deBaiChung+'</div>'+html; doneCtx.add(q.nhomId); }
+        else if(!q.nhomId&&q.deBaiChung){ html='<div class="q-context">'+q.deBaiChung+'</div>'+html; }
+        if(q.hinhAnh) html+='<div style="margin-top:10px"><img src="'+driveImg(q.hinhAnh)+'" style="max-width:100%;max-height:340px;border-radius:8px" loading="lazy"></div>';
+        return { id:i+1, type:typeMap[q.loai]||'mc', question:html,
+                 optA:q.optA||'', optB:q.optB||'', optC:q.optC||'', optD:q.optD||'', correct:q.correct||'' };
+    });
+    const btn=document.getElementById('nh-ef-create-btn');
+    btn.disabled=true; btn.innerHTML='<i class="fa-solid fa-spinner fa-spin"></i> Đang tạo đề...';
+    (async ()=>{
+        try{
+            await fetch(DB_URL,{method:'POST',mode:'no-cors',headers:{'Content-Type':'text/plain;charset=utf-8'},body:JSON.stringify({
+                action:'saveExam', examId, tenDe,
+                moTa:'Tổng hợp từ ngân hàng — '+questions.length+' câu',
+                thoiGian:parseInt(document.getElementById('nh-ef-thoigian').value)||50,
+                trangThai:document.getElementById('nh-ef-trangthai').value,
+                lop:document.getElementById('nh-ef-lop').value })});
+            await new Promise(r=>setTimeout(r,600));
+            await fetch(DB_URL,{method:'POST',mode:'no-cors',headers:{'Content-Type':'text/plain;charset=utf-8'},body:JSON.stringify({
+                action:'saveQuestions', examId, clearFirst:true, questions })});
+            btn.innerHTML='<i class="fa-solid fa-circle-check"></i> Đã tạo đề '+examId+'!';
+            toast('<i class="fa-solid fa-circle-check"></i> Đề "'+tenDe+'" đã tạo với '+questions.length+' câu! Xem ở tab Soạn đề thi.','ok');
+            setTimeout(()=>{ btn.disabled=false; btn.innerHTML='<i class="fa-solid fa-rocket"></i> Tạo đề & đưa câu hỏi vào';
+                document.getElementById('nh-exam-form').style.display='none'; bankClearSelection(); loadExamList(); },2000);
+        }catch(e){
+            btn.disabled=false; btn.innerHTML='<i class="fa-solid fa-rocket"></i> Tạo đề & đưa câu hỏi vào';
+            toast('Lỗi: '+e.message,'err');
+        }
+    })();
 }
 </script>
 </body>

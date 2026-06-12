@@ -2064,7 +2064,7 @@ nhDrop.addEventListener('drop',e=>{ const f=e.dataTransfer.files[0]; if(f) bankH
 
 document.addEventListener('click',function(e){
     const im=e.target;
-    if(im&&im.tagName==='IMG'&&im.closest('.nh-list,.nh-preview-list,#preview2'))im.classList.toggle('img-zoomed');
+    if(im&&im.tagName==='IMG'&&!im.classList.contains('mt-eq')&&im.closest('.nh-list,.nh-preview-list,#preview2'))im.classList.toggle('img-zoomed');
 });
 function nhStatus(html,isErr){
     const s=document.getElementById('nh-up-status');

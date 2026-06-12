@@ -1568,10 +1568,77 @@ function cropCanvasInk(c,pad){
         return c2;
     }catch(e){return c;}
 }
+function renderMathWmf(u8){
+    /* Bộ vẽ WMF tối giản cho ảnh công thức MathType (js-wmf vẽ sai) */
+    try{
+    const dv0=new DataView(u8.buffer,u8.byteOffset,u8.byteLength);
+    if(dv0.getUint32(0,true)===0x9AC6CDD7)u8=u8.subarray(22);
+    const dv=new DataView(u8.buffer,u8.byteOffset,u8.byteLength);
+    const SYM={34:'∀',36:'∃',39:'∍',64:'≅',65:'Α',66:'Β',67:'Χ',68:'Δ',69:'Ε',70:'Φ',71:'Γ',72:'Η',73:'Ι',74:'ϑ',75:'Κ',76:'Λ',77:'Μ',78:'Ν',79:'Ο',80:'Π',81:'Θ',82:'Ρ',83:'Σ',84:'Τ',85:'Υ',86:'ς',87:'Ω',88:'Ξ',89:'Ψ',90:'Ζ',92:'∴',94:'⊥',97:'α',98:'β',99:'χ',100:'δ',101:'ε',102:'φ',103:'γ',104:'η',105:'ι',106:'ϕ',107:'κ',108:'λ',109:'μ',110:'ν',111:'ο',112:'π',113:'θ',114:'ρ',115:'σ',116:'τ',117:'υ',118:'ϖ',119:'ω',120:'ξ',121:'ψ',122:'ζ',162:'′',163:'≤',164:'⁄',165:'∞',166:'ƒ',171:'↔',172:'←',173:'↑',174:'→',175:'↓',176:'°',177:'±',179:'≥',180:'×',181:'∝',182:'∂',183:'•',184:'÷',185:'≠',186:'≡',187:'≈',188:'…',196:'⊗',197:'⊕',198:'∅',199:'∩',200:'∪',201:'⊃',202:'⊇',203:'⊄',204:'⊂',205:'⊆',206:'∈',207:'∉',208:'∠',209:'∇',213:'∏',214:'√',215:'⋅',216:'¬',217:'∧',218:'∨',219:'⇔',220:'⇐',221:'⇑',222:'⇒',223:'⇓',229:'∑',242:'∫'};
+    let off=18,extW=0,extH=0,orgX=0,orgY=0;
+    while(off+6<=u8.length){
+        const size=dv.getUint32(off,true),fn=dv.getUint16(off+4,true);
+        if(size<3)break;
+        if(fn===0x020C){extH=dv.getInt16(off+6,true);extW=dv.getInt16(off+8,true);}
+        if(fn===0x020B){orgY=dv.getInt16(off+6,true);orgX=dv.getInt16(off+8,true);}
+        off+=size*2; if(fn===0)break;
+    }
+    if(!extW||!extH)return null;
+    const k=Math.min(2,1400/extW,1400/extH);
+    const W=Math.max(8,Math.round(extW*k)),H=Math.max(8,Math.round(extH*k));
+    const c=document.createElement('canvas');c.width=W;c.height=H;
+    const g=c.getContext('2d');g.fillStyle='#fff';g.fillRect(0,0,W,H);
+    const X=x=>(x-orgX)*k, Y=y=>(y-orgY)*k;
+    const objs=[];let font=null,align=0,cur={x:0,y:0},penW=1;
+    g.fillStyle='#000';g.strokeStyle='#000';
+    off=18;
+    while(off+6<=u8.length){
+        const size=dv.getUint32(off,true),fn=dv.getUint16(off+4,true);
+        if(size<3)break;
+        const P=i=>dv.getInt16(off+6+i*2,true);
+        const insertObj=o=>{const i=objs.indexOf(null);if(i>=0)objs[i]=o;else objs.push(o);};
+        switch(fn){
+            case 0x012E: align=P(0);break;
+            case 0x02FB:{
+                const hgt=Math.abs(P(0)),weight=P(4);
+                const italic=u8[off+6+10],charset=u8[off+6+13];
+                let face='';for(let i2=0;i2<32;i2++){const ch=u8[off+6+18+i2];if(!ch)break;face+=String.fromCharCode(ch);}
+                insertObj({type:'font',hgt,weight,italic,charset,face});break;}
+            case 0x02FA: insertObj({type:'pen',w:Math.max(1,P(1))});break;
+            case 0x02FC: insertObj({type:'brush'});break;
+            case 0x012D:{const o=objs[P(0)];if(o&&o.type==='font')font=o;if(o&&o.type==='pen')penW=o.w;break;}
+            case 0x01F0: objs[P(0)]=null;break;
+            case 0x0214: cur={x:P(1),y:P(0)};break;
+            case 0x0213: g.lineWidth=Math.max(1,penW*k);g.beginPath();g.moveTo(X(cur.x),Y(cur.y));g.lineTo(X(P(1)),Y(P(0)));g.stroke();cur={x:P(1),y:P(0)};break;
+            case 0x0325: case 0x0324:{const n=P(0);g.lineWidth=Math.max(1,penW*k);g.beginPath();for(let i2=0;i2<n;i2++){const px=P(1+i2*2),py=P(2+i2*2);if(i2)g.lineTo(X(px),Y(py));else g.moveTo(X(px),Y(py));}if(fn===0x0324){g.closePath();g.fill();}else g.stroke();break;}
+            case 0x041B:{const b2=P(0),r=P(1),t=P(2),l=P(3);g.fillRect(X(l),Y(t),(r-l)*k,(b2-t)*k);break;}
+            case 0x0A32:{
+                const y=P(0),x=P(1),len=P(2),opts=P(3);
+                let strOff=off+6+8;
+                if(opts&6)strOff+=8;
+                let s='';const isSym=font&&(font.charset===2||/symbol|mt extra/i.test(font.face||''));
+                for(let i2=0;i2<len;i2++){const byte=u8[strOff+i2];s+=(isSym&&SYM[byte])?SYM[byte]:String.fromCharCode(byte);}
+                let dx=null;const dxOff=strOff+len+(len%2);
+                if(dxOff+len*2<=off+size*2){dx=[];for(let i2=0;i2<len;i2++)dx.push(dv.getInt16(dxOff+i2*2,true));if(dx.some(v=>v<0||v>3000))dx=null;}
+                const fpx=Math.max(4,(font?font.hgt:200)*k);
+                g.font=(font&&font.italic?'italic ':'')+(font&&font.weight>=600?'bold ':'')+fpx+'px '+(isSym?'"Segoe UI Symbol","Cambria Math",serif':'"Times New Roman",Times,serif');
+                g.textBaseline=((align&24)===24)?'alphabetic':((align&8)?'bottom':'top');
+                const useCP=!!(align&1);
+                let px2=useCP?cur.x:x, py2=useCP?cur.y:y;
+                if(dx){let ax=px2;const arr=[...s];for(let i2=0;i2<arr.length;i2++){g.fillText(arr[i2],X(ax),Y(py2));ax+=dx[i2]||0;}if(useCP)cur={x:ax,y:py2};}
+                else{g.fillText(s,X(px2),Y(py2));if(useCP)cur={x:px2+g.measureText(s).width/k,y:py2};}
+                break;}
+        }
+        off+=size*2; if(fn===0)break;
+    }
+    return c;
+    }catch(e){return null;}
+}
 function wmfToDataUri(u8){
     /* Chuyển ảnh .wmf (MathType/Word cũ) sang PNG bằng canvas */
     try{
         if(typeof WMF==='undefined'||!u8||u8.length<24)return null;
+        const u8raw=u8;
         let dv=new DataView(u8.buffer,u8.byteOffset,u8.byteLength);
         if(dv.getUint32(0,true)===0x9AC6CDD7)u8=u8.subarray(22); /* bỏ header Placeable */
         const out=u8.slice(); const d2=new DataView(out.buffer);
@@ -1583,8 +1650,17 @@ function wmfToDataUri(u8){
             off+=size*2;
             if(fn===0x0000)break;
         }
-        let c=document.createElement('canvas');
-        WMF.draw_canvas(out,c);
+        let c=null;
+        /* Ảnh MathType: dùng bộ vẽ riêng (js-wmf vẽ sai chữ) */
+        let isMath=false;
+        for(let i=0;i<Math.min(out.length-8,6000);i++){
+            if(out[i]===0x4D&&out[i+1]===0x61&&out[i+2]===0x74&&out[i+3]===0x68&&out[i+4]===0x54&&out[i+5]===0x79){isMath=true;break;}
+        }
+        if(isMath)c=renderMathWmf(u8raw);
+        if(!c){
+            c=document.createElement('canvas');
+            WMF.draw_canvas(out,c);
+        }
         if(!c.width||!c.height)return null;
         c=cropCanvasInk(c,8);            /* cắt viền trắng thừa */
         if(!c)return null;               /* ảnh trắng trơn -> bỏ */

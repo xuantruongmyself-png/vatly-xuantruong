@@ -1540,6 +1540,34 @@ async function handleFile(file){
     }catch(err){console.error(err);setStatus2('<i class="fa-solid fa-bug"></i> Lỗi: '+err.message,true);}
 }
 
+function cropCanvasInk(c,pad){
+    /* Cắt bỏ phần trắng thừa quanh nội dung canvas — trả null nếu canvas trắng trơn */
+    try{
+        const w=c.width,h=c.height; if(!w||!h)return null;
+        const d=c.getContext('2d').getImageData(0,0,w,h).data;
+        let minX=w,minY=h,maxX=-1,maxY=-1;
+        for(let y=0;y<h;y++){
+            const row=y*w*4;
+            for(let x=0;x<w;x++){
+                const i=row+x*4;
+                if(d[i+3]>20&&(d[i]<245||d[i+1]<245||d[i+2]<245)){
+                    if(x<minX)minX=x; if(x>maxX)maxX=x;
+                    if(y<minY)minY=y; if(y>maxY)maxY=y;
+                }
+            }
+        }
+        if(maxX<0)return null;
+        pad=(pad==null?8:pad);
+        minX=Math.max(0,minX-pad); minY=Math.max(0,minY-pad);
+        maxX=Math.min(w-1,maxX+pad); maxY=Math.min(h-1,maxY+pad);
+        const cw=maxX-minX+1, ch=maxY-minY+1;
+        if(cw>=w-2&&ch>=h-2)return c;
+        const c2=document.createElement('canvas'); c2.width=cw; c2.height=ch;
+        const x2=c2.getContext('2d'); x2.fillStyle='#fff'; x2.fillRect(0,0,cw,ch);
+        x2.drawImage(c,minX,minY,cw,ch,0,0,cw,ch);
+        return c2;
+    }catch(e){return c;}
+}
 function wmfToDataUri(u8){
     /* Chuyển ảnh .wmf (MathType/Word cũ) sang PNG bằng canvas */
     try{
@@ -1555,9 +1583,20 @@ function wmfToDataUri(u8){
             off+=size*2;
             if(fn===0x0000)break;
         }
-        const c=document.createElement('canvas');
+        let c=document.createElement('canvas');
         WMF.draw_canvas(out,c);
         if(!c.width||!c.height)return null;
+        c=cropCanvasInk(c,8);            /* cắt viền trắng thừa */
+        if(!c)return null;               /* ảnh trắng trơn -> bỏ */
+        if(c.height<46||c.width<46){     /* công thức quá nhỏ -> phóng to cho dễ đọc */
+            const k=Math.min(3,Math.max(46/c.height,46/c.width));
+            const c3=document.createElement('canvas');
+            c3.width=Math.round(c.width*k); c3.height=Math.round(c.height*k);
+            const x3=c3.getContext('2d'); x3.imageSmoothingEnabled=true; x3.imageSmoothingQuality='high';
+            x3.fillStyle='#fff'; x3.fillRect(0,0,c3.width,c3.height);
+            x3.drawImage(c,0,0,c3.width,c3.height);
+            c=c3;
+        }
         return c.toDataURL('image/png');
     }catch(e){console.warn('WMF convert fail:',e);return null;}
 }

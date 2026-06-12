@@ -1444,17 +1444,21 @@ function filterScores(q){
     function resolveImg(node,rM,mM){ let rid=null; const b=descendants(node,'blip'); if(b.length)rid=attr(b[0],'r:embed')||attr(b[0],'embed'); if(!rid){const id=descendants(node,'imagedata');if(id.length)rid=attr(id[0],'r:id')||attr(id[0],'id');} if(!rid)return''; const t=rM[rid]; if(!t)return''; const n=t.replace(/^.*\//,''); const u=mM[n]; if(!u)return''; return'<img src="'+u+'" />'; }
     function runIsBold(r){ const p=firstChild(r,'rPr'); if(!p)return false; const b=firstChild(p,'b'); if(!b)return false; const v=attr(b,'w:val'); return!(v==='0'||v==='false'); }
     function runVA(r){ const p=firstChild(r,'rPr'); if(!p)return null; const v=firstChild(p,'vertAlign'); if(!v)return null; const val=(attr(v,'w:val')||'').toLowerCase(); return val==='subscript'?'sub':val==='superscript'?'sup':null; }
-    function paraTokens(p,rM,mM){ const t=[];
+    function paraTokens(p,rM,mM){ const t=[],deferred=[];
+        /* Anh "anchor" (tha tu do/lo lung) khong phan anh dung vi tri trong dong XML -- */
+        /* neu chen ngay tai do se cat doi cau hoi. Don cac anh anchor ra cuoi doan van. */
+        const isAnchored=el=>!!firstChild(el,'anchor');
         (function rec(n){ for(const c of elemChildren(n)){ const ln=localName(c);
             if(ln==='r'){ const bold=runIsBold(c); const va=runVA(c); for(const cc of elemChildren(c)){ const l2=localName(cc);
                 if(l2==='t'){const tx=cc.textContent||'';if(tx){let h=esc(tx);if(va==='sub')h='<sub>'+h+'</sub>';else if(va==='sup')h='<sup>'+h+'</sup>';t.push({type:'run',bold,html:h,text:tx});}}
                 else if(l2==='tab')t.push({type:'tab',bold:false,html:' ',text:' '});
                 else if(l2==='br')t.push({type:'br',bold:false,html:' ',text:' '});
-                else if(l2==='drawing'||l2==='pict'||l2==='object'){const img=resolveImg(cc,rM,mM);if(img)t.push({type:'img',bold:false,html:img,text:''});} } }
+                else if(l2==='drawing'||l2==='pict'||l2==='object'){const img=resolveImg(cc,rM,mM);if(img){const tok={type:'img',bold:false,html:img,text:''};if(l2==='drawing'&&isAnchored(cc))deferred.push(tok);else t.push(tok);}} } }
             else if(ln==='oMath'){const m=ommlToLatex(c);if(m)t.push({type:'math',bold:false,html:m,text:' '});}
             else if(ln==='oMathPara'){for(const om of elemChildren(c))if(localName(om)==='oMath'){const m=ommlToLatex(om);if(m)t.push({type:'math',bold:false,html:m,text:' '});}}
-            else if(ln==='drawing'||ln==='pict'){const img=resolveImg(c,rM,mM);if(img)t.push({type:'img',bold:false,html:img,text:''});}
+            else if(ln==='drawing'||ln==='pict'){const img=resolveImg(c,rM,mM);if(img){const tok={type:'img',bold:false,html:img,text:''};if(ln==='drawing'&&isAnchored(c))deferred.push(tok);else t.push(tok);}}
             else if(ln==='hyperlink'||ln==='smartTag'||ln==='ins')rec(c); } })(p);
+        for(const tok of deferred) t.push(tok);
         return t; }
     function docToLines(doc,rM,mM){ const body=firstChild(doc.documentElement,'body')||doc.documentElement; const ps=elemChildren(body).filter(c=>localName(c)==='p'); const lines=[];
         ps.forEach(p=>{ const toks=paraTokens(p,rM,mM); if(!toks.length)return; let ch='',ct='',pb=false,st=false;

@@ -1469,7 +1469,11 @@ function filterScores(q){
         const rePart=/^\s*ph[âầ]n\s+(i{1,3})\b/i,reQ=/^\s*câu\s*\d+\s*[:.)]/i,reO=/^\s*(\*?)\s*([A-D])\s*[.)]/,reSub=/^\s*(\*?)\s*([a-d])\s*\)/,reAns=/^\s*đáp\s*án\s*[:：]/i,reCtx=/^\s*sử\s*dụng\s*thông\s*tin/i,reSkip=/^\s*lời\s*giải\s*$/i;
         const sQ=h=>h.replace(/^\s*câu\s*\d+\s*[:.)]\s*/i,''),sO=h=>h.replace(/^\s*\*?\s*[A-D]\s*[.)]\s*/i,''),sS=h=>h.replace(/^\s*\*?\s*[a-d]\s*\)\s*/i,''),sA=h=>h.replace(/^\s*đáp\s*án\s*[:：]\s*/i,'');
         const sM={a:'A',b:'B',c:'C',d:'D'};
-        function extInline(s){ const re=/(^|\s)(\*?)([A-D])\s*[.)]\s*/g;const mk=[];let m;while((m=re.exec(s))!==null)mk.push({start:m.index,ts:re.lastIndex,L:m[3].toUpperCase(),iC:m[2]==='*'});const out=[];for(let i=0;i<mk.length;i++){const end=i+1<mk.length?mk[i+1].start:s.length;out.push({L:mk[i].L,iC:mk[i].iC,text:s.slice(mk[i].ts,end).trim()});}return out;}
+        function extInline(s){ const re=/(^|\s)(\*?)([A-D])\s*[.)]\s*/g;const mk=[];let m;while((m=re.exec(s))!==null)mk.push({start:m.index,ts:re.lastIndex,L:m[3].toUpperCase(),iC:m[2]==='*'});
+            /* Bỏ các "marker" cuối dòng không có nội dung theo sau (ví dụ "...so với vật B." */
+            /* — đó chỉ là chữ hoa + dấu chấm ở cuối câu, KHÔNG phải đáp án mới trên cùng dòng) */
+            while(mk.length>1 && mk[mk.length-1].ts>=s.length) mk.pop();
+            const out=[];for(let i=0;i<mk.length;i++){const end=i+1<mk.length?mk[i+1].start:s.length;out.push({L:mk[i].L,iC:mk[i].iC,text:s.slice(mk[i].ts,end).trim()});}return out;}
         const qs=[];let part='mc',ctx='',cur=null,mode=null,tf=null;
         function fin(){ if(!cur)return; if(cur.type==='tf')cur.correct=['A','B','C','D'].map(L=>(tf&&tf[L])?'Đ':'S').join(''); qs.push(cur);cur=null;tf=null;mode=null; }
         lines.forEach(line=>{ const t=line.text; const pm=t.match(rePart);

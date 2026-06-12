@@ -681,6 +681,24 @@
     <div class="nh-grid">
         <!-- CỘT TRÁI: NẠP FILE EXCEL -->
         <div>
+            <div class="nh-card" style="border-color:var(--blue)">
+                <h3><i class="fa-solid fa-file-word" style="color:var(--blue)"></i> Tải đề .docx — tự bóc tách</h3>
+                <div class="dropzone" id="nh2-dropzone" style="padding:28px 16px">
+                    <div class="dropzone-icon"><i class="fa-solid fa-cloud-arrow-up"></i></div>
+                    <h3 style="font-size:15px">Thả file Word (.docx) vào đây</h3>
+                    <p style="font-size:13px">Hệ thống tự tách câu hỏi, ảnh, công thức — như Soạn Đề</p>
+                    <div class="btn-browse" style="font-size:13px;padding:9px 18px"><i class="fa-solid fa-folder-open"></i> Chọn file</div>
+                    <input type="file" id="nh2-file-input" accept=".docx" style="display:none">
+                </div>
+                <div class="nh-up-status" id="nh2-status"></div>
+                <div id="nh2-preview-zone" style="display:none">
+                    <div class="nh-preview-list" id="nh2-preview-list" style="max-height:520px;overflow:auto;padding-right:4px"></div>
+                    <div class="nh-progress" id="nh2-progress"><div class="bar" id="nh2-progress-bar"></div></div>
+                    <button class="btn-publish" id="nh2-publish-btn" style="width:100%;margin-top:12px" onclick="bankDocxPublish()">
+                        <i class="fa-solid fa-cloud-arrow-up"></i> Nạp vào ngân hàng
+                    </button>
+                </div>
+            </div>
             <div class="nh-card">
                 <h3><i class="fa-solid fa-file-arrow-up" style="color:var(--blue)"></i> Nạp câu hỏi từ Excel</h3>
                 <div class="dropzone" id="nh-dropzone" style="padding:28px 16px">
@@ -700,11 +718,12 @@
                 </div>
             </div>
             <div class="hint-bar">
-                <strong><i class="fa-solid fa-circle-info" style="color:var(--blue)"></i> Quy trình:</strong><br>
-                1. Ném tài liệu (Word/PDF/ảnh) cho Claude bốc tách thành file Excel chuẩn<br>
-                2. Mở file kiểm tra lại → thả vào ô trên<br>
-                3. Hệ thống tự phân loại theo <b>chương · mức độ · loại câu</b><br>
-                4. Tick chọn câu trong kho → bấm <b>"Tạo đề thi"</b>
+                <strong><i class="fa-solid fa-circle-info" style="color:var(--blue)"></i> Quy trình nhanh (đề .docx):</strong><br>
+                1. Thả file <code>.docx</code> đề thi (đúng cấu trúc như Soạn Đề: <code>Câu 1:</code>, <code>A./B./C./D.</code>, <code>a)/b)/c)/d)</code>, <code>Đáp án:</code>) vào ô trên<br>
+                2. Hệ thống tự tách câu, ảnh, công thức — chọn <b>Chương · Mức độ</b> cho từng câu (đã đoán sẵn)<br>
+                3. Câu chưa nhận diện được đáp án sẽ có dấu cảnh báo — bấm chọn đáp án đúng<br>
+                4. Bấm <b>"Nạp vào ngân hàng"</b><br><br>
+                <strong><i class="fa-solid fa-file-excel" style="color:#15803d"></i> Hoặc nạp từ Excel:</strong> dùng file mẫu, điền sẵn <b>chương · mức độ · loại câu · đáp án</b> rồi thả vào ô dưới.
             </div>
         </div>
 
@@ -1972,6 +1991,138 @@ async function bankPublish(){
     setTimeout(()=>{ prog.style.display='none'; bar.style.width='0';
         document.getElementById('nh-preview-zone').style.display='none';
         document.getElementById('nh-up-status').innerHTML=''; bankParsed=[]; nhFile.value='';
+        btn.disabled=false; btn.innerHTML='<i class="fa-solid fa-cloud-arrow-up"></i> Nạp vào ngân hàng';
+        loadBank(true);
+    },2200);
+}
+
+/* ════════════════════════════════════
+   NGÂN HÀNG: TẢI ĐỀ .DOCX — TỰ BÓC TÁCH
+   (tái dùng DocxEngine của tab Soạn Đề: tự tách câu, ảnh base64, công thức)
+════════════════════════════════════ */
+let bankDocxQs=[];
+const CHUONG_LIST=['Vật lí nhiệt','Khí lí tưởng','Từ trường','Vật lí hạt nhân'];
+const MUCDO_LIST=[['NB','Nhận biết'],['TH','Thông hiểu'],['VD','Vận dụng'],['VDC','Vận dụng cao']];
+
+function guessChuong(text){
+    const t=(text||'').toLowerCase();
+    if(/hạt nhân|phóng xạ|đồng vị|phân hạch|phản ứng hạt|nơtron|neutron|proton|năng lượng liên kết|chu kỳ bán rã|chu kì bán rã|độ hụt khối|hoạt độ/.test(t)) return 'Vật lí hạt nhân';
+    if(/từ trường|cảm ứng từ|nam châm|dòng điện cảm ứng|suất điện động cảm ứng|từ thông|la bàn|khung dây|lực từ|cuộn dây/.test(t)) return 'Từ trường';
+    if(/khí lí tưởng|khí lý tưởng|áp suất|đẳng tích|đẳng áp|đẳng nhiệt|số mol|mol khí|piston|xilanh|định luật boyle|charles|gay-lussac|thuyết động học/.test(t)) return 'Khí lí tưởng';
+    return 'Vật lí nhiệt';
+}
+
+const nh2Dropzone=document.getElementById('nh2-dropzone');
+const nh2FileInput=document.getElementById('nh2-file-input');
+nh2Dropzone.addEventListener('click',()=>nh2FileInput.click());
+nh2FileInput.addEventListener('change',e=>{if(e.target.files.length)bankDocxHandleFile(e.target.files[0]);});
+['dragenter','dragover'].forEach(ev=>nh2Dropzone.addEventListener(ev,e=>{e.preventDefault();nh2Dropzone.classList.add('dragover');}));
+['dragleave','drop'].forEach(ev=>nh2Dropzone.addEventListener(ev,e=>{e.preventDefault();nh2Dropzone.classList.remove('dragover');}));
+nh2Dropzone.addEventListener('drop',e=>{const f=e.dataTransfer.files[0];if(f)bankDocxHandleFile(f);});
+
+function nh2Status(html,isErr){
+    const s=document.getElementById('nh2-status');
+    s.style.color=isErr?'var(--red)':'var(--blue)';
+    s.innerHTML=html;
+}
+
+async function bankDocxHandleFile(file){
+    document.getElementById('nh2-preview-zone').style.display='none';
+    if(!file.name.toLowerCase().endsWith('.docx')){nh2Status('<i class="fa-solid fa-triangle-exclamation"></i> Chỉ hỗ trợ file <b>.docx</b>',true);return;}
+    if(typeof JSZip==='undefined'){nh2Status('<i class="fa-solid fa-triangle-exclamation"></i> Chưa tải được thư viện. Tải lại trang (F5).',true);return;}
+    nh2Status('<i class="fa-solid fa-spinner fa-spin"></i> Đang đọc & bóc tách file Word...');
+    try{
+        const zip=await JSZip.loadAsync(await file.arrayBuffer());
+        const dF=zip.file("word/document.xml"); if(!dF){nh2Status('<i class="fa-solid fa-bug"></i> File Word không hợp lệ.',true);return;}
+        const dX=await dF.async("string");
+        const rF=zip.file("word/_rels/document.xml.rels");
+        const rX=rF?await rF.async("string"):null;
+        const mM={},mime={png:'image/png',jpg:'image/jpeg',jpeg:'image/jpeg',gif:'image/gif'};
+        for(const p of Object.keys(zip.files)){if(/^word\/media\//i.test(p)){const ext=p.split('.').pop().toLowerCase();if(mime[ext]){const b64=await zip.file(p).async("base64");let u='data:'+mime[ext]+';base64,'+b64;u=await compressUri(u);mM[p.replace(/^.*\//,'')]=u;}}}
+        const parser=new DOMParser();
+        const dD=parser.parseFromString(dX,"application/xml");
+        const rD=rX?parser.parseFromString(rX,"application/xml"):null;
+        let qs=DocxEngine.parse(dD,rD,mM);
+        const total=qs.length;
+        qs=qs.filter(q=>{if(q.type==='mc')return['A','B','C','D'].filter(L=>q.options[L]&&q.options[L].trim()).length>=2;if(q.type==='tf')return['A','B','C','D'].filter(L=>q.options[L]&&q.options[L].trim()).length>=2;if(q.type==='short')return(q.question||'').trim().length>0;return false;});
+        const skipped=total-qs.length;
+        qs.forEach((q,i)=>{q.id=i+1; q.chuong=guessChuong(q.question+' '+(q.options.A||'')+(q.options.B||'')+(q.options.C||'')+(q.options.D||'')); q.mucDo='TH';});
+        bankDocxQs=qs;
+        if(!qs.length){nh2Status('<i class="fa-solid fa-triangle-exclamation"></i> Không tìm thấy câu hỏi. Kiểm tra lại định dạng "Câu 1:", "A.", "a)", "Đáp án:"...',true);return;}
+        nh2Status('<i class="fa-solid fa-circle-check"></i> Đọc được <b>'+qs.length+'</b> câu từ '+esc(file.name)+(skipped?' (bỏ qua '+skipped+' mục không nhận dạng được)':'')+'. Kiểm tra Chương/Mức độ/Đáp án rồi bấm "Nạp vào ngân hàng".');
+        renderBankDocxPreview();
+    }catch(err){console.error(err);nh2Status('<i class="fa-solid fa-bug"></i> Lỗi: '+err.message,true);}
+}
+
+function renderBankDocxPreview(){
+    const wrap=document.getElementById('nh2-preview-zone'),preview=document.getElementById('nh2-preview-list');
+    const chuOpts=CHUONG_LIST.map(c=>`<option value="${esc(c)}">${esc(c)}</option>`).join('');
+    const mdOpts=MUCDO_LIST.map(([v,t])=>`<option value="${v}">${t}</option>`).join('');
+    let html='';
+    bankDocxQs.forEach((q,idx)=>{
+        html+=`<div class="q-card" data-idx="${idx}"><div class="q-top"><span class="q-num">Câu ${q.id}<span class="q-type-tag t-${q.type}">${TL[q.type]}</span></span><div class="q-text">${q.question}</div></div>`;
+        html+=`<div style="display:flex;gap:8px;margin-bottom:10px">
+            <select class="esb-select" style="flex:1" data-chuong="${idx}">${chuOpts}</select>
+            <select class="esb-select" style="flex:1" data-mucdo="${idx}">${mdOpts}</select>
+        </div>`;
+        if(q.type==='mc'){
+            ['A','B','C','D'].forEach(L=>{const isC=q.correct===L;html+=`<label class="opt-row ${isC?'correct':''}"><input type="radio" name="nh2-mc-${idx}" value="${L}" ${isC?'checked':''}><span class="opt-letter">${L}.</span><span class="opt-body">${q.options[L]||'<i style="color:var(--gray2)">(trống)</i>'}</span></label>`;});
+            if(!q.correct)html+=`<div class="no-correct"><i class="fa-solid fa-circle-exclamation"></i> Chưa nhận diện đáp án — bấm chọn 1 đáp án.</div>`;
+        }else if(q.type==='tf'){
+            ['A','B','C','D'].forEach(L=>{if(!q.options[L])return;const v=(q.correct[{A:0,B:1,C:2,D:3}[L]]||'S');
+                html+=`<div class="tf-row" data-idx="${idx}" data-l="${L}"><span class="tf-letter">${SL[L]}</span><span class="tf-stmt">${q.options[L]}</span><div class="tf-choice"><span class="tf-btn ${v==='Đ'?'sel-d':''}" data-v="Đ">Đúng</span><span class="tf-btn ${v==='S'?'sel-s':''}" data-v="S">Sai</span></div></div>`;});
+        }else if(q.type==='short'){
+            html+=`<div class="short-ans"><i class="fa-solid fa-pen" style="color:var(--green)"></i> Đáp án: <input type="text" maxlength="20" value="${esc(q.correct||'')}" data-short="${idx}"></div>`;
+            if(!q.correct)html+=`<div class="no-correct"><i class="fa-solid fa-circle-exclamation"></i> Chưa có đáp số.</div>`;
+        }
+        html+=`</div>`;
+    });
+    preview.innerHTML=html;
+    preview.querySelectorAll('select[data-chuong]').forEach(sel=>{const idx=+sel.dataset.chuong; sel.value=bankDocxQs[idx].chuong; sel.addEventListener('change',e=>{bankDocxQs[idx].chuong=e.target.value;});});
+    preview.querySelectorAll('select[data-mucdo]').forEach(sel=>{const idx=+sel.dataset.mucdo; sel.value=bankDocxQs[idx].mucDo; sel.addEventListener('change',e=>{bankDocxQs[idx].mucDo=e.target.value;});});
+    preview.querySelectorAll('input[type=radio]').forEach(r=>{r.addEventListener('change',e=>{const idx=parseInt(e.target.name.replace('nh2-mc-',''));bankDocxQs[idx].correct=e.target.value;const card=e.target.closest('.q-card');card.querySelectorAll('.opt-row').forEach(row=>row.classList.remove('correct'));e.target.closest('.opt-row').classList.add('correct');const w=card.querySelector('.no-correct');if(w)w.remove();});});
+    preview.querySelectorAll('.tf-btn').forEach(btn=>{btn.addEventListener('click',()=>{const rw=btn.closest('.tf-row');const idx=+rw.dataset.idx,L=rw.dataset.l,v=btn.dataset.v;const pos={A:0,B:1,C:2,D:3}[L];let arr=(bankDocxQs[idx].correct||'SSSS').split('');while(arr.length<4)arr.push('S');arr[pos]=v;bankDocxQs[idx].correct=arr.join('');rw.querySelectorAll('.tf-btn').forEach(b=>{b.classList.remove('sel-d','sel-s');});btn.classList.add(v==='Đ'?'sel-d':'sel-s');});});
+    preview.querySelectorAll('input[data-short]').forEach(inp=>{inp.addEventListener('input',e=>{const idx=+e.target.dataset.short;bankDocxQs[idx].correct=e.target.value.trim();});});
+    wrap.style.display='block';
+    if(typeof renderMathInElement==='function'){try{renderMathInElement(preview,{delimiters:[{left:'$$',right:'$$',display:true},{left:'$',right:'$',display:false}]});}catch(e){}}
+}
+
+/* ── Nạp các câu đã bóc tách từ .docx vào ngân hàng (gói 40 câu) ── */
+async function bankDocxPublish(){
+    if(!bankDocxQs.length) return;
+    const missing=[];
+    bankDocxQs.forEach(q=>{
+        if(q.type==='mc'&&!q.correct) missing.push('Câu '+q.id);
+        if(q.type==='short'&&!(q.correct||'').toString().trim()) missing.push('Câu '+q.id);
+    });
+    if(missing.length){ toast('<i class="fa-solid fa-triangle-exclamation"></i> Còn '+missing.length+' câu chưa có đáp án ('+missing.slice(0,6).join(', ')+(missing.length>6?'...':'')+')','err'); return; }
+    const items=bankDocxQs.map(q=>({
+        mon:'Vật Lý 12', chuong:q.chuong, mucDo:q.mucDo,
+        loai: q.type==='mc'?'TN':q.type==='tf'?'DS':'TLN',
+        nhomId:'', deBaiChung:'',
+        question:q.question,
+        optA:q.options.A||'', optB:q.options.B||'', optC:q.options.C||'', optD:q.options.D||'',
+        correct:q.correct||'', hinhAnh:'', giaiThich:''
+    }));
+    items.forEach(q=>{ q.phanLoai=classifyTaxonomy(q); });
+    const btn=document.getElementById('nh2-publish-btn'); btn.disabled=true;
+    const prog=document.getElementById('nh2-progress'), bar=document.getElementById('nh2-progress-bar');
+    prog.style.display='block';
+    const CHUNK=40; let done=0;
+    for(let i=0;i<items.length;i+=CHUNK){
+        const part=items.slice(i,i+CHUNK);
+        btn.innerHTML='<i class="fa-solid fa-spinner fa-spin"></i> Đang nạp '+(done+part.length)+'/'+items.length+'...';
+        try{
+            await fetch(DB_URL,{method:'POST',mode:'no-cors',headers:{'Content-Type':'text/plain;charset=utf-8'},body:JSON.stringify({action:'saveNganHang',questions:part})});
+        }catch(e){}
+        done+=part.length; bar.style.width=Math.round(done/items.length*100)+'%';
+        await new Promise(r=>setTimeout(r,800));
+    }
+    btn.innerHTML='<i class="fa-solid fa-circle-check"></i> Đã nạp '+done+' câu!';
+    toast('<i class="fa-solid fa-circle-check"></i> Đã nạp '+done+' câu vào ngân hàng','ok');
+    setTimeout(()=>{ prog.style.display='none'; bar.style.width='0';
+        document.getElementById('nh2-preview-zone').style.display='none';
+        document.getElementById('nh2-status').innerHTML=''; bankDocxQs=[]; nh2FileInput.value='';
         btn.disabled=false; btn.innerHTML='<i class="fa-solid fa-cloud-arrow-up"></i> Nạp vào ngân hàng';
         loadBank(true);
     },2200);

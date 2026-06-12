@@ -1413,28 +1413,33 @@ function filterScores(q){
     function firstChild(el,name){ for(const c of elemChildren(el)) if(localName(c)===name) return c; return null; }
     function descendants(el,name){ const out=[]; (function rec(n){ for(const c of elemChildren(n)){ if(localName(c)===name) out.push(c); rec(c);} })(el); return out; }
     function attr(el,qname){ let v=el.getAttribute&&el.getAttribute(qname); if(v!=null&&v!=='') return v; const ln=qname.replace(/^.*:/,''); if(el.attributes){ for(let i=0;i<el.attributes.length;i++){ const a=el.attributes[i]; if((a.localName||a.name.replace(/^.*:/,''))===ln) return a.value; } } return null; }
-    function runTextToMML(text){ let out='',i=0; const isD=c=>c>='0'&&c<='9'; const isA=c=>/[A-Za-zµ]/.test(c);
-        while(i<text.length){ const c=text[i]; if(c===' '||c==='\t'){out+='<mspace width="0.2em"/>',i++;continue;} if(isD(c)){let n=c;i++;while(i<text.length&&(isD(text[i])||text[i]==='.'||text[i]===',')){n+=text[i];i++;}out+='<mn>'+esc(n)+'</mn>';}else if(isA(c)){out+='<mi>'+esc(c)+'</mi>';i++;}else{out+='<mo>'+esc(c)+'</mo>';i++;}} return out;}
-    function row(s){ return '<mrow>'+(s||'<mspace width="0.1em"/>')+'</mrow>'; }
-    function mmlChildren(el){ let s=''; for(const c of elemChildren(el)) s+=mmlElem(c); return s; }
-    function mmlElem(el){ switch(localName(el)){
-        case 'oMath': case 'oMathPara': return mmlChildren(el);
-        case 'r': { let s=''; for(const c of elemChildren(el)) if(localName(c)==='t') s+=runTextToMML(c.textContent||''); return s; }
-        case 't': return runTextToMML(el.textContent||'');
-        case 'f': { const n=firstChild(el,'num'),d=firstChild(el,'den'); return '<mfrac>'+row(mmlChildren(n))+row(mmlChildren(d))+'</mfrac>'; }
-        case 'sSup': { const e=firstChild(el,'e'),s=firstChild(el,'sup'); return '<msup>'+row(mmlChildren(e))+row(mmlChildren(s))+'</msup>'; }
-        case 'sSub': { const e=firstChild(el,'e'),s=firstChild(el,'sub'); return '<msub>'+row(mmlChildren(e))+row(mmlChildren(s))+'</msub>'; }
-        case 'sSubSup': { const e=firstChild(el,'e'),sb=firstChild(el,'sub'),sp=firstChild(el,'sup'); return '<msubsup>'+row(mmlChildren(e))+row(mmlChildren(sb))+row(mmlChildren(sp))+'</msubsup>'; }
-        case 'sPre': { const e=firstChild(el,'e'),sb=firstChild(el,'sub'),sp=firstChild(el,'sup'); return '<mmultiscripts>'+row(mmlChildren(e))+'<mprescripts/>'+(sb?row(mmlChildren(sb)):'<none/>')+(sp?row(mmlChildren(sp)):'<none/>')+'</mmultiscripts>'; }
-        case 'rad': { const d=firstChild(el,'deg'),e=firstChild(el,'e'); const dm=d?mmlChildren(d):''; if(dm.trim()) return '<mroot>'+row(mmlChildren(e))+row(dm)+'</mroot>'; return '<msqrt>'+mmlChildren(e)+'</msqrt>'; }
-        case 'd': { const dPr=firstChild(el,'dPr'); let b='(',en=')'; if(dPr){const bc=firstChild(dPr,'begChr'),ec=firstChild(dPr,'endChr');if(bc)b=attr(bc,'m:val')||'';if(ec)en=attr(ec,'m:val')||'';} const es=elemChildren(el).filter(c=>localName(c)==='e'); return '<mrow><mo>'+esc(b)+'</mo>'+es.map(e=>mmlChildren(e)).join('<mo>,</mo>')+'<mo>'+esc(en)+'</mo></mrow>'; }
-        case 'nary': { const np=firstChild(el,'naryPr'); let chr='∫'; if(np){const ch=firstChild(np,'chr');if(ch)chr=attr(ch,'m:val')||chr;} const sb=firstChild(el,'sub'),sp=firstChild(el,'sup'),e=firstChild(el,'e'); const sM=sb?mmlChildren(sb):'',pM=sp?mmlChildren(sp):''; let op=sM&&pM?'<msubsup><mo>'+esc(chr)+'</mo>'+row(sM)+row(pM)+'</msubsup>':sM?'<msub><mo>'+esc(chr)+'</mo>'+row(sM)+'</msub>':'<mo>'+esc(chr)+'</mo>'; return '<mrow>'+op+mmlChildren(e)+'</mrow>'; }
-        case 'func': { const fn=firstChild(el,'fName'),e=firstChild(el,'e'); return '<mrow>'+mmlChildren(fn)+'<mo>&#8289;</mo>'+row(mmlChildren(e))+'</mrow>'; }
-        case 'rad2': case 'acc': case 'bar': case 'limLow': case 'limUpp': return mmlChildren(el);
-        case 'e': case 'num': case 'den': case 'sup': case 'sub': case 'deg': case 'fName': case 'lim': return mmlChildren(el);
-        case 'rPr': case 'ctrlPr': case 'fPr': case 'dPr': case 'naryPr': case 'sSupPr': case 'sSubPr': case 'sSubSupPr': case 'sPrePr': case 'radPr': return '';
-        default: return mmlChildren(el); } }
-    function ommlToMathML(o){ const b=mmlChildren(o); if(!b.trim()) return ''; return '<math xmlns="http://www.w3.org/1998/Math/MathML">'+b+'</math>'; }
+    /* OOXML m:oMath -> LaTeX (rendered via KaTeX $...$, robust to esc()/innerHTML unlike raw MathML) */
+    function texEsc(text){ let out=''; for(const c of text){ if(c===' '||c==='\t') out+='\\ '; else if(c==='\\') out+='\\backslash '; else if('{}%&#_$'.includes(c)) out+='\\'+c; else out+=c; } return out; }
+    function texRow(s){ return '{'+(s||'')+'}'; }
+    function texChildren(el){ let s=''; for(const c of elemChildren(el)) s+=texElem(c); return s; }
+    const FUNC_TEX={sin:'\\sin',cos:'\\cos',tan:'\\tan',cot:'\\cot',sec:'\\sec',csc:'\\csc',ln:'\\ln',log:'\\log',lim:'\\lim',exp:'\\exp',min:'\\min',max:'\\max',arcsin:'\\arcsin',arccos:'\\arccos',arctan:'\\arctan'};
+    function texElem(el){ switch(localName(el)){
+        case 'oMath': case 'oMathPara': return texChildren(el);
+        case 'r': { let s=''; for(const c of elemChildren(el)) if(localName(c)==='t') s+=texEsc(c.textContent||''); return s; }
+        case 't': return texEsc(el.textContent||'');
+        case 'f': { const n=firstChild(el,'num'),d=firstChild(el,'den'); return '\\frac'+texRow(texChildren(n))+texRow(texChildren(d)); }
+        case 'sSup': { const e=firstChild(el,'e'),s=firstChild(el,'sup'); return texRow(texChildren(e))+'^'+texRow(texChildren(s)); }
+        case 'sSub': { const e=firstChild(el,'e'),s=firstChild(el,'sub'); return texRow(texChildren(e))+'_'+texRow(texChildren(s)); }
+        case 'sSubSup': { const e=firstChild(el,'e'),sb=firstChild(el,'sub'),sp=firstChild(el,'sup'); return texRow(texChildren(e))+'_'+texRow(texChildren(sb))+'^'+texRow(texChildren(sp)); }
+        case 'sPre': { const e=firstChild(el,'e'),sb=firstChild(el,'sub'),sp=firstChild(el,'sup'); let s=''; if(sp)s+='^'+texRow(texChildren(sp)); if(sb)s+='_'+texRow(texChildren(sb)); return s+texRow(texChildren(e)); }
+        case 'rad': { const d=firstChild(el,'deg'),e=firstChild(el,'e'); const dm=d?texChildren(d):''; if(dm.trim()) return '\\sqrt['+dm+']'+texRow(texChildren(e)); return '\\sqrt'+texRow(texChildren(e)); }
+        case 'd': { const dPr=firstChild(el,'dPr'); let b='(',en=')'; if(dPr){const bc=firstChild(dPr,'begChr'),ec=firstChild(dPr,'endChr');if(bc)b=attr(bc,'m:val')||'';if(ec)en=attr(ec,'m:val')||'';} const DM={'(':'(',')':')','[':'[',']':']','{':'\\{','}':'\\}','|':'|','‖':'\\|','':'.'}; const lb=DM[b]!==undefined?DM[b]:texEsc(b),rb=DM[en]!==undefined?DM[en]:texEsc(en); const es=elemChildren(el).filter(c=>localName(c)==='e'); return '\\left'+(lb||'.')+es.map(e=>texChildren(e)).join(',')+'\\right'+(rb||'.'); }
+        case 'nary': { const np=firstChild(el,'naryPr'); let chr='∫'; if(np){const ch=firstChild(np,'chr');if(ch)chr=attr(ch,'m:val')||chr;} const SYM={'∫':'\\int','∬':'\\iint','∭':'\\iiint','∮':'\\oint','∑':'\\sum','∏':'\\prod','⋂':'\\bigcap','⋃':'\\bigcup'}; const op=SYM[chr]||texEsc(chr); const sb=firstChild(el,'sub'),sp=firstChild(el,'sup'),e=firstChild(el,'e'); let s=op; if(sb)s+='_'+texRow(texChildren(sb)); if(sp)s+='^'+texRow(texChildren(sp)); return s+texChildren(e); }
+        case 'func': { const fn=firstChild(el,'fName'),e=firstChild(el,'e'); const fnText=fn?texChildren(fn).trim():''; const fnKey=fnText.replace(/\\\\ /g,'').toLowerCase(); const fnTex=FUNC_TEX[fnKey]||('\\operatorname{'+texEsc(fnText.replace(/\\\\ /g,''))+'}'); return fnTex+'\\,'+texChildren(e); }
+        case 'acc': { const accPr=firstChild(el,'accPr'),e=firstChild(el,'e'); let chr=''; if(accPr){const ch=firstChild(accPr,'chr'); if(ch)chr=attr(ch,'m:val')||'';} const body=texChildren(e); if(chr==='̂'||chr==='^')return '\\hat'+texRow(body); if(chr==='̇'||chr==='.')return '\\dot'+texRow(body); if(chr==='⃗'||chr==='→')return '\\vec'+texRow(body); return '\\overline'+texRow(body); }
+        case 'bar': { const barPr=firstChild(el,'barPr'),e=firstChild(el,'e'); let pos='top'; if(barPr){const p=firstChild(barPr,'pos'); if(p)pos=attr(p,'m:val')||'top';} return (pos==='bot'?'\\underline':'\\overline')+texRow(texChildren(e)); }
+        case 'limLow': { const e=firstChild(el,'e'),lim=firstChild(el,'lim'); return texChildren(e)+'_'+texRow(lim?texChildren(lim):''); }
+        case 'limUpp': { const e=firstChild(el,'e'),lim=firstChild(el,'lim'); return texChildren(e)+'^'+texRow(lim?texChildren(lim):''); }
+        case 'rad2': return texChildren(el);
+        case 'e': case 'num': case 'den': case 'sup': case 'sub': case 'deg': case 'fName': case 'lim': return texChildren(el);
+        case 'rPr': case 'ctrlPr': case 'fPr': case 'dPr': case 'naryPr': case 'sSupPr': case 'sSubPr': case 'sSubSupPr': case 'sPrePr': case 'radPr': case 'accPr': case 'barPr': return '';
+        default: return texChildren(el); } }
+    function ommlToLatex(o){ const b=texChildren(o); if(!b.trim()) return ''; return '$'+b+'$'; }
     function buildRelsMap(rD){ const m={}; if(!rD) return m; descendants(rD.documentElement,'Relationship').forEach(r=>{const id=attr(r,'Id');const t=attr(r,'Target')||'';if(id)m[id]=t;}); return m; }
     function resolveImg(node,rM,mM){ let rid=null; const b=descendants(node,'blip'); if(b.length)rid=attr(b[0],'r:embed')||attr(b[0],'embed'); if(!rid){const id=descendants(node,'imagedata');if(id.length)rid=attr(id[0],'r:id')||attr(id[0],'id');} if(!rid)return''; const t=rM[rid]; if(!t)return''; const n=t.replace(/^.*\//,''); const u=mM[n]; if(!u)return''; return'<img src="'+u+'" />'; }
     function runIsBold(r){ const p=firstChild(r,'rPr'); if(!p)return false; const b=firstChild(p,'b'); if(!b)return false; const v=attr(b,'w:val'); return!(v==='0'||v==='false'); }
@@ -1446,8 +1451,8 @@ function filterScores(q){
                 else if(l2==='tab')t.push({type:'tab',bold:false,html:' ',text:' '});
                 else if(l2==='br')t.push({type:'br',bold:false,html:' ',text:' '});
                 else if(l2==='drawing'||l2==='pict'||l2==='object'){const img=resolveImg(cc,rM,mM);if(img)t.push({type:'img',bold:false,html:img,text:''});} } }
-            else if(ln==='oMath'){const m=ommlToMathML(c);if(m)t.push({type:'math',bold:false,html:m,text:' '});}
-            else if(ln==='oMathPara'){for(const om of elemChildren(c))if(localName(om)==='oMath'){const m=ommlToMathML(om);if(m)t.push({type:'math',bold:false,html:m,text:' '});}}
+            else if(ln==='oMath'){const m=ommlToLatex(c);if(m)t.push({type:'math',bold:false,html:m,text:' '});}
+            else if(ln==='oMathPara'){for(const om of elemChildren(c))if(localName(om)==='oMath'){const m=ommlToLatex(om);if(m)t.push({type:'math',bold:false,html:m,text:' '});}}
             else if(ln==='drawing'||ln==='pict'){const img=resolveImg(c,rM,mM);if(img)t.push({type:'img',bold:false,html:img,text:''});}
             else if(ln==='hyperlink'||ln==='smartTag'||ln==='ins')rec(c); } })(p);
         return t; }

@@ -88,7 +88,7 @@
         .nh-opts b.ok { color:#15803d; }
         .nh-context { background:#f0f9ff; border-left:3px solid var(--blue); padding:7px 10px; font-size:13px; margin-bottom:6px; border-radius:6px; color:#0c4a6e; }
         .nh-img-thumb { max-height:90px; max-width:220px; border-radius:6px; border:1px solid var(--border); margin-top:6px; display:block; }
-        .nh-q-body img:not(.nh-img-thumb), .q-card img { max-width:min(100%,380px); max-height:190px; width:auto !important; height:auto !important; display:block; margin:6px 0; border:1px solid var(--border); border-radius:6px; background:#fff; cursor:zoom-in; }
+        .nh-q-body img:not(.nh-img-thumb), .q-card img { max-width:min(100%,380px); max-height:190px; width:auto; height:auto; display:block; margin:6px 0; border:1px solid var(--border); border-radius:6px; background:#fff; cursor:zoom-in; }
         .nh-q-body img.img-zoomed, .q-card img.img-zoomed { max-width:100%; max-height:none; cursor:zoom-out; }
         .nh-opts { word-break:break-word; overflow-wrap:anywhere; }
         .nh-opts .nh-opt { margin-right:14px; }
@@ -1447,7 +1447,7 @@ function filterScores(q){
         default: return texChildren(el); } }
     function ommlToLatex(o){ const b=texChildren(o); if(!b.trim()) return ''; return '$'+b+'$'; }
     function buildRelsMap(rD){ const m={}; if(!rD) return m; descendants(rD.documentElement,'Relationship').forEach(r=>{const id=attr(r,'Id');const t=attr(r,'Target')||'';if(id)m[id]=t;}); return m; }
-    function resolveImg(node,rM,mM){ let rid=null; const b=descendants(node,'blip'); if(b.length)rid=attr(b[0],'r:embed')||attr(b[0],'embed'); if(!rid){const id=descendants(node,'imagedata');if(id.length)rid=attr(id[0],'r:id')||attr(id[0],'id');} if(!rid)return''; const t=rM[rid]; if(!t)return''; const n=t.replace(/^.*\//,''); const u=mM[n]; if(!u)return''; return'<img src="'+u+'" />'; }
+    function resolveImg(node,rM,mM){ let rid=null; const b=descendants(node,'blip'); if(b.length)rid=attr(b[0],'r:embed')||attr(b[0],'embed'); if(!rid){const id=descendants(node,'imagedata');if(id.length)rid=attr(id[0],'r:id')||attr(id[0],'id');} if(!rid)return''; const t=rM[rid]; if(!t)return''; const n=t.replace(/^.*\//,''); const u=mM[n]; if(!u)return''; if(typeof u==='object')return'<img src="'+u.src+'" style="width:'+u.w+'px;display:inline-block;vertical-align:middle;border:none;margin:2px 4px" />'; return'<img src="'+u+'" />'; }
     function runIsBold(r){ const p=firstChild(r,'rPr'); if(!p)return false; const b=firstChild(p,'b'); if(!b)return false; const v=attr(b,'w:val'); return!(v==='0'||v==='false'); }
     function runVA(r){ const p=firstChild(r,'rPr'); if(!p)return null; const v=firstChild(p,'vertAlign'); if(!v)return null; const val=(attr(v,'w:val')||'').toLowerCase(); return val==='subscript'?'sub':val==='superscript'?'sup':null; }
     function paraTokens(p,rM,mM){ const t=[],deferred=[];
@@ -1526,7 +1526,7 @@ async function handleFile(file){
         const rF=zip.file("word/_rels/document.xml.rels");
         const rX=rF?await rF.async("string"):null;
         const mM={},mime={png:'image/png',jpg:'image/jpeg',jpeg:'image/jpeg',gif:'image/gif'};
-        for(const p of Object.keys(zip.files)){if(/^word\/media\//i.test(p)){const ext=p.split('.').pop().toLowerCase();let u=null;if(mime[ext]){const b64=await zip.file(p).async("base64");u='data:'+mime[ext]+';base64,'+b64;}else if(ext==='wmf'){u=wmfToDataUri(await zip.file(p).async("uint8array"));}if(u){u=await compressUri(u);mM[p.replace(/^.*\//,'')]=u;}}}
+        for(const p of Object.keys(zip.files)){if(/^word\/media\//i.test(p)){const ext=p.split('.').pop().toLowerCase();let u=null;if(mime[ext]){const b64=await zip.file(p).async("base64");u='data:'+mime[ext]+';base64,'+b64;}else if(ext==='wmf'){u=wmfToDataUri(await zip.file(p).async("uint8array"));}if(u){if(typeof u==='object'){u.src=await compressUri(u.src);}else{u=await compressUri(u);}mM[p.replace(/^.*\//,'')]=u;}}}
         const parser=new DOMParser();
         const dD=parser.parseFromString(dX,"application/xml");
         const rD=rX?parser.parseFromString(rX,"application/xml"):null;
@@ -1586,7 +1586,7 @@ function renderMathWmf(u8){
     if(!extW||!extH)return null;
     const k=Math.min(2,1400/extW,1400/extH);
     const W=Math.max(8,Math.round(extW*k)),H=Math.max(8,Math.round(extH*k));
-    const c=document.createElement('canvas');c.width=W;c.height=H;
+    const c=document.createElement('canvas');c.width=W;c.height=H;c._k=k;
     const g=c.getContext('2d');g.fillStyle='#fff';g.fillRect(0,0,W,H);
     const X=x=>(x-orgX)*k, Y=y=>(y-orgY)*k;
     const objs=[];let font=null,align=0,cur={x:0,y:0},penW=1;
@@ -1640,7 +1640,8 @@ function wmfToDataUri(u8){
         if(typeof WMF==='undefined'||!u8||u8.length<24)return null;
         const u8raw=u8;
         let dv=new DataView(u8.buffer,u8.byteOffset,u8.byteLength);
-        if(dv.getUint32(0,true)===0x9AC6CDD7)u8=u8.subarray(22); /* bỏ header Placeable */
+        let inch=1440;
+        if(dv.getUint32(0,true)===0x9AC6CDD7){inch=dv.getUint16(14,true)||1440;u8=u8.subarray(22);} /* bỏ header Placeable */
         const out=u8.slice(); const d2=new DataView(out.buffer);
         let off=18; /* sau WMF header 9 WORD */
         while(off+6<=out.length){
@@ -1657,13 +1658,18 @@ function wmfToDataUri(u8){
             if(out[i]===0x4D&&out[i+1]===0x61&&out[i+2]===0x74&&out[i+3]===0x68&&out[i+4]===0x54&&out[i+5]===0x79){isMath=true;break;}
         }
         if(isMath)c=renderMathWmf(u8raw);
+        let kk=(c&&c._k)||1;
         if(!c){
             c=document.createElement('canvas');
             WMF.draw_canvas(out,c);
+            kk=1;
         }
         if(!c.width||!c.height)return null;
         c=cropCanvasInk(c,8);            /* cắt viền trắng thừa */
         if(!c)return null;               /* ảnh trắng trơn -> bỏ */
+        /* Cỡ hiển thị thật theo Word (logical units -> px), nhân 1.45 cho dễ đọc */
+        let dispW=Math.round(c.width/kk/inch*96*1.45);
+        dispW=Math.max(18,Math.min(dispW,640));
         if(c.height<46||c.width<46){     /* công thức quá nhỏ -> phóng to cho dễ đọc */
             const k=Math.min(3,Math.max(46/c.height,46/c.width));
             const c3=document.createElement('canvas');
@@ -1673,7 +1679,7 @@ function wmfToDataUri(u8){
             x3.drawImage(c,0,0,c3.width,c3.height);
             c=c3;
         }
-        return c.toDataURL('image/png');
+        return {src:c.toDataURL('image/png'), w:dispW};
     }catch(e){console.warn('WMF convert fail:',e);return null;}
 }
 function compressUri(uri){return new Promise(resolve=>{const img=new Image();img.onload=()=>{const MW=640;let w=img.naturalWidth,h=img.naturalHeight;if(!w||!h){resolve(uri);return;}if(w>MW){h=Math.round(h*MW/w);w=MW;}const c=document.createElement('canvas');c.width=w;c.height=h;const ctx=c.getContext('2d');ctx.fillStyle='#fff';ctx.fillRect(0,0,w,h);ctx.drawImage(img,0,0,w,h);try{const out=c.toDataURL('image/jpeg',.75);resolve(out.length<uri.length?out:uri);}catch(e){resolve(uri);}}; img.onerror=()=>resolve(uri);img.src=uri;});}
@@ -2209,7 +2215,7 @@ async function bankDocxHandleFile(file){
         const rF=zip.file("word/_rels/document.xml.rels");
         const rX=rF?await rF.async("string"):null;
         const mM={},mime={png:'image/png',jpg:'image/jpeg',jpeg:'image/jpeg',gif:'image/gif'};
-        for(const p of Object.keys(zip.files)){if(/^word\/media\//i.test(p)){const ext=p.split('.').pop().toLowerCase();let u=null;if(mime[ext]){const b64=await zip.file(p).async("base64");u='data:'+mime[ext]+';base64,'+b64;}else if(ext==='wmf'){u=wmfToDataUri(await zip.file(p).async("uint8array"));}if(u){u=await compressUri(u);mM[p.replace(/^.*\//,'')]=u;}}}
+        for(const p of Object.keys(zip.files)){if(/^word\/media\//i.test(p)){const ext=p.split('.').pop().toLowerCase();let u=null;if(mime[ext]){const b64=await zip.file(p).async("base64");u='data:'+mime[ext]+';base64,'+b64;}else if(ext==='wmf'){u=wmfToDataUri(await zip.file(p).async("uint8array"));}if(u){if(typeof u==='object'){u.src=await compressUri(u.src);}else{u=await compressUri(u);}mM[p.replace(/^.*\//,'')]=u;}}}
         const parser=new DOMParser();
         const dD=parser.parseFromString(dX,"application/xml");
         const rD=rX?parser.parseFromString(rX,"application/xml"):null;

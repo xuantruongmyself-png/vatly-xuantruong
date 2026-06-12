@@ -9,6 +9,7 @@
     <script defer src="https://cdn.jsdelivr.net/npm/katex@0.16.9/dist/contrib/auto-render.min.js"></script>
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
     <script src="https://cdnjs.cloudflare.com/ajax/libs/jszip/3.10.1/jszip.min.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/wmf@1.0.2/dist/wmf.min.js"></script>
     <script src="https://cdnjs.cloudflare.com/ajax/libs/xlsx/0.18.5/xlsx.full.min.js"></script>
     <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800;900&family=DM+Mono:wght@400;500&display=swap" rel="stylesheet">
     <style>
@@ -56,7 +57,7 @@
         .tab-content.active { display:block; }
 
         /* ── Ngân hàng câu hỏi ── */
-        .nh-grid { display:grid; grid-template-columns:380px 1fr; gap:24px; align-items:start; }
+        .nh-grid { display:grid; grid-template-columns:380px minmax(0,1fr); gap:24px; align-items:start; }
         @media(max-width:1000px){ .nh-grid{grid-template-columns:1fr;} }
         .nh-card { background:var(--bg); border:1.5px solid var(--border); border-radius:12px; padding:20px; margin-bottom:20px; }
         .nh-card h3 { font-size:15px; font-weight:800; margin-bottom:12px; display:flex; align-items:center; gap:8px; }
@@ -87,6 +88,11 @@
         .nh-opts b.ok { color:#15803d; }
         .nh-context { background:#f0f9ff; border-left:3px solid var(--blue); padding:7px 10px; font-size:13px; margin-bottom:6px; border-radius:6px; color:#0c4a6e; }
         .nh-img-thumb { max-height:90px; max-width:220px; border-radius:6px; border:1px solid var(--border); margin-top:6px; display:block; }
+        .nh-q-body img:not(.nh-img-thumb), .q-card img { max-width:min(100%,380px); max-height:190px; width:auto !important; height:auto !important; display:block; margin:6px 0; border:1px solid var(--border); border-radius:6px; background:#fff; cursor:zoom-in; }
+        .nh-q-body img.img-zoomed, .q-card img.img-zoomed { max-width:100%; max-height:none; cursor:zoom-out; }
+        .nh-opts { word-break:break-word; overflow-wrap:anywhere; }
+        .nh-opts .nh-opt { margin-right:14px; }
+        .nh-context { word-break:break-word; overflow-wrap:anywhere; }
         .nh-del-btn { border:none; background:transparent; color:var(--gray2); cursor:pointer; font-size:14px; padding:6px; flex-shrink:0; }
         .nh-del-btn:hover { color:var(--red); }
         .nh-selbar { position:sticky; bottom:12px; display:none; align-items:center; gap:12px; background:#0f172a; color:#fff; padding:12px 18px; border-radius:12px; margin-top:14px; box-shadow:0 8px 24px rgba(0,0,0,.25); flex-wrap:wrap; }
@@ -1520,7 +1526,7 @@ async function handleFile(file){
         const rF=zip.file("word/_rels/document.xml.rels");
         const rX=rF?await rF.async("string"):null;
         const mM={},mime={png:'image/png',jpg:'image/jpeg',jpeg:'image/jpeg',gif:'image/gif'};
-        for(const p of Object.keys(zip.files)){if(/^word\/media\//i.test(p)){const ext=p.split('.').pop().toLowerCase();if(mime[ext]){const b64=await zip.file(p).async("base64");let u='data:'+mime[ext]+';base64,'+b64;u=await compressUri(u);mM[p.replace(/^.*\//,'')]=u;}}}
+        for(const p of Object.keys(zip.files)){if(/^word\/media\//i.test(p)){const ext=p.split('.').pop().toLowerCase();let u=null;if(mime[ext]){const b64=await zip.file(p).async("base64");u='data:'+mime[ext]+';base64,'+b64;}else if(ext==='wmf'){u=wmfToDataUri(await zip.file(p).async("uint8array"));}if(u){u=await compressUri(u);mM[p.replace(/^.*\//,'')]=u;}}}
         const parser=new DOMParser();
         const dD=parser.parseFromString(dX,"application/xml");
         const rD=rX?parser.parseFromString(rX,"application/xml"):null;
@@ -1534,6 +1540,27 @@ async function handleFile(file){
     }catch(err){console.error(err);setStatus2('<i class="fa-solid fa-bug"></i> Lỗi: '+err.message,true);}
 }
 
+function wmfToDataUri(u8){
+    /* Chuyển ảnh .wmf (MathType/Word cũ) sang PNG bằng canvas */
+    try{
+        if(typeof WMF==='undefined'||!u8||u8.length<24)return null;
+        let dv=new DataView(u8.buffer,u8.byteOffset,u8.byteLength);
+        if(dv.getUint32(0,true)===0x9AC6CDD7)u8=u8.subarray(22); /* bỏ header Placeable */
+        const out=u8.slice(); const d2=new DataView(out.buffer);
+        let off=18; /* sau WMF header 9 WORD */
+        while(off+6<=out.length){
+            const size=d2.getUint32(off,true), fn=d2.getUint16(off+4,true);
+            if(size<3)break;
+            if(fn===0x0626)d2.setUint16(off+4,0x0001,true); /* vô hiệu META_ESCAPE (MathType) */
+            off+=size*2;
+            if(fn===0x0000)break;
+        }
+        const c=document.createElement('canvas');
+        WMF.draw_canvas(out,c);
+        if(!c.width||!c.height)return null;
+        return c.toDataURL('image/png');
+    }catch(e){console.warn('WMF convert fail:',e);return null;}
+}
 function compressUri(uri){return new Promise(resolve=>{const img=new Image();img.onload=()=>{const MW=640;let w=img.naturalWidth,h=img.naturalHeight;if(!w||!h){resolve(uri);return;}if(w>MW){h=Math.round(h*MW/w);w=MW;}const c=document.createElement('canvas');c.width=w;c.height=h;const ctx=c.getContext('2d');ctx.fillStyle='#fff';ctx.fillRect(0,0,w,h);ctx.drawImage(img,0,0,w,h);try{const out=c.toDataURL('image/jpeg',.75);resolve(out.length<uri.length?out:uri);}catch(e){resolve(uri);}}; img.onerror=()=>resolve(uri);img.src=uri;});}
 
 const TL={mc:'A/B/C/D',tf:'Đúng/Sai',short:'Trả lời ngắn'};
@@ -1767,6 +1794,17 @@ function driveImg(url){
     return url; /* link ảnh thường */
 }
 function nhEsc(s){ return esc(s); }
+function nhSafe(s){
+    /* Hiển thị nội dung câu hỏi/phương án: cho phép HTML (sup, sub, img...),
+       chặn script, vá thẻ img cụt & chuỗi base64 trần gây tràn trang */
+    s=(s==null?'':s.toString());
+    if(!/<\/?[a-zA-Z][^>]*>/.test(s)) return nhEsc(s); /* văn bản thuần -> escape như cũ */
+    return s
+        .replace(/<script[\s\S]*?(<\/script>|$)/gi,'')
+        .replace(/\son\w+\s*=\s*("[^"]*"|'[^']*')/gi,'')
+        .replace(/<img\b(?![^<]*>)[\s\S]*$/i,'')
+        .replace(/(^|[\s>])[A-Za-z0-9+\/]{400,}={0,2}(?=$|[\s<])/g,'$1');
+}
 function nhKatex(el){ setTimeout(()=>{ if(typeof renderMathInElement==='function'){ try{ renderMathInElement(el,{delimiters:[{left:'$$',right:'$$',display:true},{left:'$',right:'$',display:false}]}); }catch(e){} } },80); }
 
 /* ── Tải ngân hàng từ Google Sheets ── */
@@ -1819,21 +1857,22 @@ function bankRowHtml(q,withCheck){
     const sub=['A','B','C','D'];
     let opts='';
     if(q.loai==='TN'){
+        const anyImg=sub.some(L=>/<img/i.test(q['opt'+L]||''));
         opts=sub.filter(L=>q['opt'+L]).map(L=>{
             const ok=(q.correct||'').toString().trim().toUpperCase()===L;
-            return `<b class="${ok?'ok':''}">${L}.</b> ${nhEsc(q['opt'+L])}`;
-        }).join(' &nbsp; ');
+            return `<span class="nh-opt"><b class="${ok?'ok':''}">${L}.</b> ${nhSafe(q['opt'+L])}</span>`;
+        }).join(anyImg?'<br>':' ');
     }else if(q.loai==='DS'){
         const corr=(q.correct||'').toString().replace(/[^ĐSds]/g,'').toUpperCase();
         opts=sub.filter(L=>q['opt'+L]).map((L,i)=>{
             const v=corr[i]||'?';
-            return `<b class="${v==='Đ'?'ok':''}">${String.fromCharCode(97+i)})</b> ${nhEsc(q['opt'+L])} <b class="${v==='Đ'?'ok':''}">[${v}]</b>`;
+            return `<b class="${v==='Đ'?'ok':''}">${String.fromCharCode(97+i)})</b> ${nhSafe(q['opt'+L])} <b class="${v==='Đ'?'ok':''}">[${v}]</b>`;
         }).join('<br>');
     }else{
         opts=`<b class="ok">Đáp án: ${nhEsc(q.correct)}</b>`;
     }
     const img=q.hinhAnh?q.hinhAnh.split(',').map(u=>`<img class="nh-img-thumb" src="${nhEsc(driveImg(u.trim()))}" loading="lazy" onerror="this.style.display='none'">`).join(''):'';
-    const ctx=q.deBaiChung?`<div class="nh-context">${q.deBaiChung}</div>`:'';
+    const ctx=q.deBaiChung?`<div class="nh-context">${nhSafe(q.deBaiChung)}</div>`:'';
     const md=(q.mucDo||'').toUpperCase();
     return `<div class="nh-row ${sel?'selected':''}" id="nh-row-${nhEsc(q.id)}">
         ${withCheck?`<input type="checkbox" ${sel?'checked':''} onchange="bankToggle('${nhEsc(q.id)}',this.checked)">`:''}
@@ -1846,7 +1885,7 @@ function bankRowHtml(q,withCheck){
                 ${q.nhomId?`<span class="nh-badge b-nhom"><i class="fa-solid fa-link"></i> ${nhEsc(q.nhomId)}</span>`:''}
                 <span style="font-size:11px;color:var(--gray2)">${nhEsc(q.id||'')}</span>
             </div>
-            ${ctx}<div class="nh-q-text">${q.question||''}</div>${img}
+            ${ctx}<div class="nh-q-text">${nhSafe(q.question)}</div>${img}
             <div class="nh-opts">${opts}</div>
         </div>
         ${withCheck?`<button class="nh-del-btn" title="Xóa câu này" onclick="bankDeleteOne('${nhEsc(q.id)}')"><i class="fa-solid fa-trash"></i></button>`:''}
@@ -1903,6 +1942,10 @@ nhFile.addEventListener('change',e=>{ if(e.target.files.length) bankHandleFile(e
 ['dragleave','drop'].forEach(ev=>nhDrop.addEventListener(ev,e=>{e.preventDefault();nhDrop.classList.remove('dragover');}));
 nhDrop.addEventListener('drop',e=>{ const f=e.dataTransfer.files[0]; if(f) bankHandleFile(f); });
 
+document.addEventListener('click',function(e){
+    const im=e.target;
+    if(im&&im.tagName==='IMG'&&im.closest('.nh-list,.nh-preview-list,#preview2'))im.classList.toggle('img-zoomed');
+});
 function nhStatus(html,isErr){
     const s=document.getElementById('nh-up-status');
     s.innerHTML=html; s.style.color=isErr?'var(--red)':'var(--blue)';
@@ -2051,7 +2094,7 @@ async function bankDocxHandleFile(file){
         const rF=zip.file("word/_rels/document.xml.rels");
         const rX=rF?await rF.async("string"):null;
         const mM={},mime={png:'image/png',jpg:'image/jpeg',jpeg:'image/jpeg',gif:'image/gif'};
-        for(const p of Object.keys(zip.files)){if(/^word\/media\//i.test(p)){const ext=p.split('.').pop().toLowerCase();if(mime[ext]){const b64=await zip.file(p).async("base64");let u='data:'+mime[ext]+';base64,'+b64;u=await compressUri(u);mM[p.replace(/^.*\//,'')]=u;}}}
+        for(const p of Object.keys(zip.files)){if(/^word\/media\//i.test(p)){const ext=p.split('.').pop().toLowerCase();let u=null;if(mime[ext]){const b64=await zip.file(p).async("base64");u='data:'+mime[ext]+';base64,'+b64;}else if(ext==='wmf'){u=wmfToDataUri(await zip.file(p).async("uint8array"));}if(u){u=await compressUri(u);mM[p.replace(/^.*\//,'')]=u;}}}
         const parser=new DOMParser();
         const dD=parser.parseFromString(dX,"application/xml");
         const rD=rX?parser.parseFromString(rX,"application/xml"):null;

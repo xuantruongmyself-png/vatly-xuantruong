@@ -1800,7 +1800,7 @@ function bankRowHtml(q,withCheck){
     }else{
         opts=`<b class="ok">Đáp án: ${nhEsc(q.correct)}</b>`;
     }
-    const img=q.hinhAnh?`<img class="nh-img-thumb" src="${nhEsc(driveImg(q.hinhAnh))}" loading="lazy" onerror="this.style.display='none'">`:'';
+    const img=q.hinhAnh?q.hinhAnh.split(',').map(u=>`<img class="nh-img-thumb" src="${nhEsc(driveImg(u.trim()))}" loading="lazy" onerror="this.style.display='none'">`).join(''):'';
     const ctx=q.deBaiChung?`<div class="nh-context">${q.deBaiChung}</div>`:'';
     const md=(q.mucDo||'').toUpperCase();
     return `<div class="nh-row ${sel?'selected':''}" id="nh-row-${nhEsc(q.id)}">
@@ -2001,7 +2001,7 @@ function bankCreateExam(){
         let html=q.question||'';
         if(q.nhomId&&q.deBaiChung&&!doneCtx.has(q.nhomId)){ html='<div class="q-context">'+q.deBaiChung+'</div>'+html; doneCtx.add(q.nhomId); }
         else if(!q.nhomId&&q.deBaiChung){ html='<div class="q-context">'+q.deBaiChung+'</div>'+html; }
-        if(q.hinhAnh) html+='<div style="margin-top:10px"><img src="'+driveImg(q.hinhAnh)+'" style="max-width:100%;max-height:340px;border-radius:8px" loading="lazy"></div>';
+        if(q.hinhAnh) html+='<div style="margin-top:10px">'+q.hinhAnh.split(',').map(u=>'<img src="'+driveImg(u.trim())+'" style="max-width:100%;max-height:340px;border-radius:8px;margin:4px 0" loading="lazy">').join('')+'</div>';
         return { id:i+1, type:typeMap[q.loai]||'mc', question:html,
                  optA:q.optA||'', optB:q.optB||'', optC:q.optC||'', optD:q.optD||'', correct:q.correct||'' };
     });
